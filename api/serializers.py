@@ -5,31 +5,15 @@ from .models import Merchant, Products, User, UserProducts
 
 
 class MerchantSerializer(serializers.ModelSerializer):
+    merchant_logo = serializers.ImageField(use_url=True)
+
     class Meta:
         model = Merchant
-        fields = (
-            'id',
-            'merchant_id',
-            'merchant_session',
-            'name',
-            'address',
-            'first_name',
-            'last_name',
-            'phone',
-            'merchant_logo',
-            'created_at',
-            'country',
-            'province',
-            'city',
-            'product',
-            'email',
-            'is_merchant',
-            'credit_card',
-            'shaba_code'
-        )
+        fields = '__all__'
 
 
 class CreateMerchantSerializer(serializers.ModelSerializer):
+    merchant_logo = serializers.ImageField(use_url=True)
     class Meta:
         model = Merchant
         fields = (
@@ -48,6 +32,33 @@ class CreateMerchantSerializer(serializers.ModelSerializer):
             'credit_card',
             'shaba_code'
         )
+
+class MainMerchantPageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Merchant
+        fields = (    
+            'name',
+            'address',
+            'first_name',
+            'last_name',
+            'phone',
+            'merchant_logo',
+            'country',
+            'province',
+            'city',
+            'email',
+            'is_merchant',
+            'product',
+            'created_at',
+            'credit_card',
+            'shaba_code'
+        )
+
+
+class UpdateMerchantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Merchant
+        fields = ('merchant_id','merchant_logo',)
 
 
 class ProductSerializer(serializers.ModelSerializer):

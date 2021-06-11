@@ -27,7 +27,7 @@ class Merchant(models.Model):
     first_name = models.CharField(max_length=80, null=True)
     last_name = models.CharField(max_length=80, null=True)
     phone = models.CharField(max_length=20, null=True)
-    merchant_logo = models.ImageField(upload_to='frontend/static/images/merchant_logo' , default='frontend/static/images/index.jpg', blank=True, null=True)
+    merchant_logo = models.ImageField(blank=True, null=True)
 
     created_at  = models.DateTimeField(auto_now_add=True)
     country = models.CharField(max_length=40)
@@ -77,6 +77,14 @@ class User(models.Model):
 
 
 
+class GoogleToken(models.Model):
+    user = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    refresh_token = models.CharField(max_length=150)
+    access_token = models.CharField(max_length=150)
+    expires_in = models.DateTimeField()
+    token_type = models.CharField(max_length=50)
+    
 
 
 

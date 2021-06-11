@@ -1,13 +1,20 @@
+import requests
+from requests.api import post
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.models import Merchant
-from django.shortcuts import render
-from rest_framework import status, generics
+from django.shortcuts import redirect, render
+from rest_framework import serializers, status, generics
 from .models import Merchant, Products
-from .serializers import CreateMerchantSerializer, CreateProductSerializer, MerchantSerializer, ProductSerializer
+from .serializers import *
 from validate_email import validate_email
 from rest_framework.decorators import api_view
-from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
+from rest_framework.parsers import MultiPartParser
+from .google_auth import is_authenticated_google, update_or_create_user_tokens
+from requests import Request
+from .credentials import *
+import hashlib
+import os
 
 @api_view(['GET'])
 def email_validator(request, email=None, *args, **kwargs):
@@ -35,11 +42,7 @@ class ProductView(generics.CreateAPIView):
 
 class CreateMerchantView(APIView):
     serializer_class = CreateMerchantSerializer
-    
-    def get(self, request, format=None):
-        snippets = Merchant.objects.all()
-        serializer = self.serializer_class(snippets, many=True)
-        return Response(serializer.data)
+    parser_classes = (MultiPartParser,)
 
     def post(self, request, format=None):
         if not self.request.session.exists(self.request.session.session_key):
@@ -49,79 +52,44 @@ class CreateMerchantView(APIView):
         
         if serializer.is_valid():
             merchant_session = self.request.session.session_key
-            name = serializer.data.get('name')
-            address = serializer.data.get('address')
-            first_name = serializer.data.get('first_name')
-            last_name = serializer.data.get('last_name')
-            phone = serializer.data.get('phone')
-            merchant_logo = serializer.data.get('merchant_logo')
-            country = serializer.data.get('country')
-            province = serializer.data.get('province')
-            city = serializer.data.get('city')
-            email = serializer.data.get('email')
-            is_merchant = serializer.data.get('is_merchant')
-            credit_card = serializer.data.get('credit_card')
-            shaba_code = serializer.data.get('shaba_code')
+            name = serializer.validated_data.get('name')
+            address = serializer.validated_data.get('address')
+            first_name = serializer.validated_data.get('first_name')
+            last_name = serializer.validated_data.get('last_name')
+            phone = serializer.validated_data.get('phone')
+            merchant_logo = serializer.validated_data.get('merchant_logo')
+            country = serializer.validated_data.get('country')
+            province = serializer.validated_data.get('province')
+            city = serializer.validated_data.get('city')
+            email = serializer.validated_data.get('email')
+            is_merchant = serializer.validated_data.get('is_merchant')
+            credit_card = serializer.validated_data.get('credit_card')
+            shaba_code = serializer.validated_data.get('shaba_code')
             
 
-            queryset = Merchant.objects.filter(merchant_id=serializer.data.get('merchant_id'))
-            if queryset.exists():
-                print('-------- Existing Query ------------')
-                merchant = queryset[0]
-                merchant.name = name
-                merchant.address = address
-                merchant.first_name = first_name
-                merchant.last_name = last_name
-                merchant.phone = phone
-                merchant.merchant_logo = merchant_logo
-                merchant.country = country
-                merchant.province = province
-                merchant.city = city
-                merchant.email = email
-                merchant.is_merchant = is_merchant
-                merchant.credit_card = credit_card
-                merchant.shaba_code = shaba_code
-                
-                merchant.save(update_fields=['name',
-                                            'address',
-                                            'first_name',
-                                            'last_name',
-                                            'phone',
-                                            'merchant_logo',
-                                            'country',
-                                            'province',
-                                            'city',
-                                            'email',
-                                            'is_merchant',
-                                            'credit_card',
-                                            'shaba_code'])
-                self.request.session['merchant_id'] = merchant.merchant_id
-                return Response(MerchantSerializer(merchant).data, status=status.HTTP_201_CREATED)
-
-            else:
-                print('-------- Creating Query ------------')
-
-                merchant = Merchant(merchant_session=merchant_session, 
-                                    name=name, 
-                                    address=address, 
-                                    first_name=first_name, 
-                                    last_name=last_name, 
-                                    phone=phone,
-                                    merchant_logo=merchant_logo,
-                                    country=country, 
-                                    province=province,
-                                    city=city, 
-                                    email=email, 
-                                    is_merchant=is_merchant, 
-                                    credit_card=credit_card, 
-                                    shaba_code=shaba_code)
-
-                merchant.save()
-                    
-                self.request.session['merchant_id'] = merchant.merchant_id
-                return Response(MerchantSerializer(merchant).data, status=status.HTTP_201_CREATED)
+            merchant = Merchant(merchant_session=merchant_session, 
+                                name=name, 
+                                address=address, 
+                                first_name=first_name, 
+                                last_name=last_name, 
+                                phone=phone,
+                                merchant_logo=merchant_logo,
+                                country=country, 
+                                province=province,
+                                city=city, 
+                                email=email, 
+                                is_merchant=is_merchant, 
+                                credit_card=credit_card, 
+                                shaba_code=shaba_code)
+                                
+            
+            merchant.save()        
+            self.request.session['merchant_id'] = merchant.merchant_id
+            return Response(MerchantSerializer(merchant).data, status=status.HTTP_201_CREATED)
+        
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
 
 
 class GetMerchantInfo(APIView):
@@ -133,8 +101,12 @@ class GetMerchantInfo(APIView):
         if merchant_id != None:
             merchant = Merchant.objects.filter(merchant_id=merchant_id)
             if merchant.exists():
-                data = CreateMerchantSerializer(merchant[0]).data
-                return Response(data, status=status.HTTP_200_OK)
+                if request.session.get('merchant_id') == merchant_id:
+                    data = MainMerchantPageSerializer(merchant[0]).data
+                    return Response(data, status=status.HTTP_200_OK)
+                
+                else:
+                    return Response({'Unauthorized Request': 'You are not authorized'}, status=status.HTTP_401_UNAUTHORIZED)
             else:
                 return Response({'Error': "Merchant Not found or request isn't from merchant"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -185,9 +157,72 @@ class CreateProductView(APIView):
 
 
 
+class AuthURL(APIView):
+    
+    def get(self, request, format=None):
+        url_endpoint = 'https://accounts.google.com/o/oauth2/v2/auth'
+        state = hashlib.sha256(os.urandom(1024)).hexdigest()
+        self.request.session['state'] = state
+        scope = 'openid email'
+        data = {
+            'scope': scope,
+            'access_type': 'offline',
+            'include_granted_scopes': 'true',
+            'response_type': 'code',
+            'state': state,
+            'redirect_uri': REDIRECT_URI,
+            'client_id': CLIENT_ID,
+            'prompt': 'consent'
+
+        }
+        url = Request('GET', url_endpoint, params=data).prepare().url
+
+        return Response({'url': url}, status=status.HTTP_200_OK)
+
+def google_callback(request, format=None):
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    error = request.GET.get('error')
+    if state != request.session['state']:
+        print('------------- NOT AUTHORIZED ACCESS -------------')
+        return redirect('frontend:') 
+
+    response = post('https://oauth2.googleapis.com/token', params={
+        'client_id': CLIENT_ID, 
+        'client_secret': CLIENT_SECRET,
+        'code': code,
+        'grant_type': 'authorization_code',
+        'redirect_uri': REDIRECT_URI,
+    }).json()
+
+    # print(response.text)
+    access_token = response.get('access_token')
+    expires_in = response.get('expires_in')
+    refresh_token = response.get('refresh_token')
+    token_type = response.get('token_type')
+
+    # if an error occurred during the call to oAuth2 api
+    error = response.get('error')
 
 
+    if not request.session.exists(request.session.session_key):
+        request.session.create()
 
+    update_or_create_user_tokens(
+        request.session.session_key,
+        access_token,
+        token_type,
+        expires_in,
+        refresh_token
+    )
+
+    return redirect('frontend:')
+
+        
+class IsAuthenticated(APIView):
+    def get(self, request, format=None):
+        is_authenticated = is_authenticated_google(self.request.session.session_key)
+        return Response({'status': is_authenticated}, status=status.HTTP_200_OK)
 
 
 

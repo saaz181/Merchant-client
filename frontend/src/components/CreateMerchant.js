@@ -38,7 +38,7 @@ buttons: {
 
 
 function getSteps() {
-  return ["company's name", 'Main Info', 'Location', 'Credit Card','Confirm'];
+  return ["company's name", 'Main Info', 'Location', 'Credit Card', 'Logo', 'Confirm'];
 }
 
 
@@ -59,6 +59,9 @@ export default function HorizontalLabelPositionBelowStepper(props) {
                 return <MerchantPage part='credit' />;
 
             case 4:
+              return <MerchantPage part='logo' />;
+
+            case 5:
                     return <MerchantPage />;
                 
             default:

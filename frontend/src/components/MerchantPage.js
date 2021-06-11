@@ -19,7 +19,7 @@ import TextField from '@material-ui/core/TextField';
 import AlternateEmailIcon from '@material-ui/icons/AlternateEmail';
 import CreditCardIcon from '@material-ui/icons/CreditCard';
 import { Alert } from '@material-ui/lab';
-
+import axios from 'axios';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -72,7 +72,7 @@ export default function MerchantPage (props) {
         merchant_id: ''
     });
     const [res, setRes] = useState(null);
-
+    const [logoPic, setLogoPic] = useState();
     const handleChange = event => {
         const value = event.target.value;
         setInfo({
@@ -380,45 +380,41 @@ export default function MerchantPage (props) {
     const confirmation = (props) => {
        
         const CreateMerchantModel = (props) => {
-            const requestOptions = {
-                method: "POST", 
-                headers: {
-                    "Content-Type": "application/json", 
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: info.companyName,
-                    address: info.address,
-                    first_name: info.firstName,
-                    last_name: info.lastName,
-                    phone: info.phone,
-                    merchant_logo: null,
-                    country: info.country,
-                    province: info.province,
-                    city: info.city, 
-                    email: info.email,
-                    is_merchant: true,
-                    credit_card: info.creditCard, 
-                    shaba_code: info.shabaCode
-                })
-            };
-            fetch('/api/create-merchant', requestOptions)
-            .then((response) => {
-                if (response.ok) {
-                    setRes(true);
-                    return response.json();
-                } else {
-                    setRes(false);
+            const formData = new FormData();
+            formData.append('name', info.companyName);
+            formData.append('address', info.address);
+            formData.append('first_name', info.firstName);
+            formData.append('last_name', info.lastName);
+            formData.append('phone', info.phone);
+            formData.append('merchant_logo', logoPic);
+            formData.append('country', info.country);
+            formData.append('province', info.province);
+            formData.append('city', info.city);
+            formData.append('email', info.email);
+            formData.append('is_merchant', true);
+            formData.append('credit_card', info.creditCard);
+            formData.append('shaba_code', info.shabaCode);
+
+            
+            axios.post('/api/create-merchant', formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
                 }
             })
-            .then((data) => {
+            .then((response) => {
                 setInfo({
-                ...info,
-                merchant_id: data.merchant_id
-            });
-            window.location.replace('/merchant/' + data.merchant_id)
-            // props.history.push(`/merchant/${info.merchant_id}`)
+                    ...info,
+                    merchant_id: response.data.merchant_id
+                });
+                setRes(true);
+                window.location.replace('/merchant/' + response.data.merchant_id);
+                 
             })
+            .catch(error => {
+                setRes(false);
+            });
+                
+            // props.history.push(`/merchant/${info.merchant_id}`)
             
         }
 

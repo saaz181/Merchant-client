@@ -8,5 +8,6 @@ urlpatterns = [
     path('merchant', index, name=''),
     path('user', index, name=''),
     path('merchant/<str:merchantId>', index),
+    path('make-product/<str:merchantId>', index),
     
 ]

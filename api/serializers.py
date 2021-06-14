@@ -33,7 +33,39 @@ class CreateMerchantSerializer(serializers.ModelSerializer):
             'shaba_code'
         )
 
+
+
+
+class UpdateMerchantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Merchant
+        fields = ('merchant_id','merchant_logo',)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Products
+        fields = '__all__'
+
+class CreateProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Products
+        fields = (
+            'id',
+            'product_name',
+            'product_description',
+            'product_image',
+            'price',
+            'quantity',
+            'off',
+            'visited_time',
+            'purchased_time',
+        )
+
+
 class MainMerchantPageSerializer(serializers.ModelSerializer):
+    product = CreateProductSerializer(many=True, read_only=True)
+    
     class Meta:
         model = Merchant
         fields = (    
@@ -53,44 +85,4 @@ class MainMerchantPageSerializer(serializers.ModelSerializer):
             'credit_card',
             'shaba_code'
         )
-
-
-class UpdateMerchantSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Merchant
-        fields = ('merchant_id','merchant_logo',)
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Products
-        fields = (
-            'id',
-            'merchant_id',
-            'product_name',
-            'product_description',
-            'product_image',
-            'price',
-            'quantity',
-            'off',
-            'visited_time',
-            'purchased_time',
-        )
-
-class CreateProductSerializer(serializers.ModelSerializer):
-    class Meta:
-        models = Products
-        fields = (
-            'merchant_id',
-            'product_name',
-            'product_description',
-            'product_image',
-            'price',
-            'quantity',
-            'off',
-            'visited_time',
-            'purchased_time',
-        )
-
-
 

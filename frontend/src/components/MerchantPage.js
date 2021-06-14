@@ -1,5 +1,5 @@
-import React, { Component, useState } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import React, { useState } from 'react';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import { 
     Grid, 
     Typography, 
@@ -50,12 +50,17 @@ const useStyles = makeStyles((theme) => ({
         position: 'relative',  
         top: '-200px', 
         marginTop: '0px'
+      },
+      mainInfoFeild: {
+        marginRight: theme.spacing(1),
+        marginLeft: theme.spacing(1)
       }
     }));
 
 
 export default function MerchantPage (props) {
     const classes = useStyles();
+    const theme = useTheme();
     const [inCompanyName, setCompanyName] = useState(false);
     const [info, setInfo] = useState({
         companyName: '', 
@@ -79,14 +84,12 @@ export default function MerchantPage (props) {
             ...info,
             [event.target.name]: value
         });
-        // console.log(info);
     }
 
     const logo = () => {
 
         const handleFileChange = event => {
            setLogoPic(event.target.files[0]);
-           console.log(event.target.files);
         }
 
         return (
@@ -200,7 +203,7 @@ export default function MerchantPage (props) {
         return (
             <Grid container spacing={2} alignItems='center'>
                     <Grid item xs={6} align='center'>
-                        <FormControl className={classes.margin}>
+                        <FormControl className={classes.mainInfoFeild}>
                             <InputLabel htmlFor="input-with-icon-adornment">First Name</InputLabel>
                                 <Input
                                 id="input-first-name"
@@ -216,7 +219,7 @@ export default function MerchantPage (props) {
                         </FormControl>
                     </Grid>
                     <Grid item xs={6} align='center'>
-                        <FormControl className={classes.margin}>
+                        <FormControl className={classes.mainInfoFeild}>
                             <InputLabel htmlFor="input-with-icon-adornment">Last Name</InputLabel>
                                 <Input
                                 id="input-last-name"
@@ -232,7 +235,7 @@ export default function MerchantPage (props) {
                         </FormControl>
                     </Grid>
                     <Grid item xs={6} align='center'>
-                        <FormControl className={classes.margin}>
+                        <FormControl className={classes.mainInfoFeild}>
                             <InputLabel htmlFor="input-with-icon-adornment">Email</InputLabel>
                                 <Input
                                 id="input-email"
@@ -248,7 +251,7 @@ export default function MerchantPage (props) {
                         </FormControl>
                     </Grid>
                     <Grid item xs={6} align='center'>
-                        <FormControl className={classes.margin}>
+                        <FormControl className={classes.mainInfoFeild}>
                             <InputLabel htmlFor="input-with-icon-adornment">Phone</InputLabel>
                                 <Input
                                 id="input-phone"
@@ -313,10 +316,11 @@ export default function MerchantPage (props) {
     const creditCardInfo = () => {
         return (
             <Grid container spacing={2} alignItems='center'>
-                <Grid item xs={6} align='center'>
+                <Grid item xs={12} align='center'>
                     <FormControl className={classes.margin}>
                             <InputLabel htmlFor="credit-card">credit card</InputLabel>
                                 <Input
+                                style={{marginBottom: theme.spacing(2), marginTop: theme.spacing(2)}}
                                 fullWidth={true}
                                 id="input-credit-card"
                                 startAdornment={
@@ -330,10 +334,11 @@ export default function MerchantPage (props) {
                                 />
                         </FormControl>
                 </Grid>
-                <Grid item xs={6} align='center'>
+                <Grid item xs={12} align='center'>
                         <FormControl className={classes.margin}>
                             <InputLabel htmlFor="credit-card">کد شبا</InputLabel>
                                 <Input
+                                style={{marginBottom: theme.spacing(2), marginTop: theme.spacing(2)}}
                                 fullWidth={true}
                                 id="input-shaba-code"
                                 startAdornment={

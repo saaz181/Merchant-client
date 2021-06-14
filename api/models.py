@@ -1,7 +1,9 @@
+from re import T
 from django.core import validators
 from django.db import models
 import string
 import random
+import base64
 from django.core.validators import MinValueValidator
 
 def generate_merchant_id():
@@ -28,7 +30,6 @@ class Merchant(models.Model):
     last_name = models.CharField(max_length=80, null=True)
     phone = models.CharField(max_length=20, null=True)
     merchant_logo = models.ImageField(blank=True, null=True)
-
     created_at  = models.DateTimeField(auto_now_add=True)
     country = models.CharField(max_length=40)
     province = models.CharField(max_length=40)
@@ -38,6 +39,7 @@ class Merchant(models.Model):
     is_merchant = models.BooleanField(default=True)
     credit_card = models.CharField(max_length=16, unique=True)
     shaba_code = models.CharField(max_length=50, unique=True)
+    unique_email = models.EmailField(blank=True, null=True, default='example@example.com')
 
     def __str__(self) -> str:
         return self.merchant_id
@@ -74,7 +76,7 @@ class User(models.Model):
     city = models.CharField(max_length=50)
     phone = models.CharField(max_length=50, blank=True, null=True)
 
-
+    
 
 
 class GoogleToken(models.Model):

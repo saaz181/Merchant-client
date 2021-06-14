@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React, {useDebugValue, useEffect, useState} from 'react';
 import { 
     BrowserRouter as Router, 
     Switch, 
     Route, 
-    Link 
+    Link,
+    Redirect
 } from "react-router-dom";
 
 import { 
@@ -38,7 +39,10 @@ import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import {  Divider } from '@material-ui/core';
 import axios from 'axios';
-
+import Avatar from '@material-ui/core/Avatar';
+import StoreIcon from '@material-ui/icons/Store';
+import makeProduct from './makeProduct';
+import ScrollableTabsButtonPrevent from './dialog';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -53,6 +57,7 @@ const useStyles = makeStyles((theme) => ({
 
     title: {
       flexGrow: 1,
+      right: 20,
     },
     drawerHeader: {
         display: 'flex',
@@ -62,6 +67,10 @@ const useStyles = makeStyles((theme) => ({
         ...theme.mixins.toolbar,
         justifyContent: 'flex-end',
       },
+    navbar: {
+        overflow: 'hidden',    
+    }
+      
 
   }));
 
@@ -72,12 +81,29 @@ export default function Homepage (props) {
 
     const [open, setOpen] = useState(false);
     const [authenticated, setAuthenticated] = useState(false);
+    const [state, setState] = useState({
+        name: '',
+        picture: '',
+        merchant_id: '',
+    });
 
     const handleDrawerClose = () => {
         setOpen(false);
     }
+    const checkForMerchant = () => {
+        if (authenticated && state.merchant_id){
+            return () => window.location.replace(`merchant/${state.merchant_id}`);
+        }
+        return null;
+    }
+
     const renderDrawer = () => {
         const itemList = [
+            {
+                text: 'Merchant Page',
+                icon: <StoreIcon />,
+                onClick: checkForMerchant()
+            },
             {
                 text: 'Purchased Product',
                 icon: <ShoppingCartIcon />,
@@ -149,19 +175,52 @@ export default function Homepage (props) {
         })
     }
 
+    const logOut = () => {
+        axios.post('/api/google-log-out')
+        .then(response => setAuthenticated(false))
+    }
+
     useEffect(() => {
-        fetch('api/is-user-authenticated')
+        axios.get('/api/user-has-merchant')
+        .then(response => {
+                setState({
+                ...state,
+                merchant_id: response.data.merchant_id
+            })
+        });
+    }, [state.merchant_id])
+
+    useEffect(() => {
+        fetch('/api/is-user-authenticated')
         .then(response => response.json())
         .then((data) => setAuthenticated(data.status))
-    })
+    }, [authenticated])
+
+
+    useEffect(() => {
+        axios.get('/api/google-info')
+        .then(response => {
+            if (authenticated) {
+                const info = response.data;
+                setState({
+                    ...state,
+                    name: info.name,
+                    picture: info.picture
+                })
+            }
+        })
+        
+    }, [authenticated])
+
+    
     
 
     function renderMerchantPage() {
         return (
             <Grid container spacing={0} alignItems='center' className={classes.root} alignContent='stretch'>
                  {renderDrawer()}
-                <Grid item xs={12} align='center'>                    
-                    <AppBar position="absolute">
+                <Grid item xs={12} align='center' className={classes.navbar} >                    
+                    <AppBar position="absolute" >
                         <Toolbar>
                         <IconButton
                              edge="start" 
@@ -173,17 +232,20 @@ export default function Homepage (props) {
                             <MenuIcon />
                         </IconButton>
                         
-                        <Typography variant="h6" className={classes.title}>
-                            Music Communication
-                        </Typography>
                         {!authenticated ? <div>
                             <Button color="inherit" onClick={() => authentication()}>Login</Button>
-                            <Button color="inherit">Sign-up</Button>
+                            <Button color="inherit" onClick={() => authentication()}>Sign-up</Button>
                         </div>
                         :
                         <div>
-                            <Button color="inherit">logout</Button>
-                            <Button color="inherit">profile</Button>
+                            <Button color="inherit" onClick={() => logOut()}>logout</Button>
+                            <Button color="inherit">{state.name}
+                            <Avatar alt={state.name} src={state.picture} style={
+                                {
+                                    marginLeft: 10
+                                }
+                            } />
+                            </Button>
                         </div>
                     }
                                         
@@ -197,7 +259,7 @@ export default function Homepage (props) {
         
                 <Grid item xs={12} align='center'>
                     <ButtonGroup disableElevation variant='contained' color='primary'>
-                        <Button color='primary' to='/merchant' component={Link}>Merchant</Button>
+                        <Button color='primary' to='/merchant' component={Link} disabled={!authenticated}>Merchant</Button>
                         <Button color='secondary' to='/user' component={Link}>Customer</Button>
                     </ButtonGroup>
                 </Grid>
@@ -214,6 +276,9 @@ export default function Homepage (props) {
                 <Route path='/merchant/:merchantId' render={(props) => {
                     return <MainMerchant {...props} />
                 }} component={MainMerchant} />
+                <Route path='/make-product/:merchantId' render={(props) => {
+                    return <makeProduct {...props} />
+                }} component={makeProduct} />
             </Switch>
         </Router>        
     )

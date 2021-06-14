@@ -1,4 +1,4 @@
-import React, {Component, useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
@@ -7,7 +7,7 @@ import CardContent from '@material-ui/core/CardContent';
 import CardMedia from '@material-ui/core/CardMedia';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
-import { CssBaseline, Divider, Grid } from '@material-ui/core';
+import { Divider, Grid } from '@material-ui/core';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
@@ -21,7 +21,8 @@ import {
     List,
     ListItem, 
     ListItemIcon, 
-    ListItemText
+    ListItemText,
+    TextField
 } from '@material-ui/core';
 import axios from 'axios';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
@@ -30,15 +31,19 @@ import StorageIcon from '@material-ui/icons/Storage';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
+import HomeIcon from '@material-ui/icons/Home';
+import DeleteOutlineIcon from '@material-ui/icons/DeleteOutline';
+import AlertDialog from './dialog'
 
 const useStyles = makeStyles((theme) => ({
   root: {
     position:'relative',
-    maxWidth: 300,
-    // marginBottom: theme.spacing(2),
-    marginLeft: theme.spacing(1),
-    marginTop: theme.spacing(2),
+    maxWidth: 400,
     marginRight: theme.spacing(1),
+    marginLeft: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+    marginTop: theme.spacing(1),
+    boxShadow: '0px 0px 20px #A9A9A9',
   },
 
   media: {
@@ -51,15 +56,26 @@ const useStyles = makeStyles((theme) => ({
   title: {
     flexGrow: 1,
   },
+//   center: {
+//     position: 'absolute',
+//     top: '-15rem',
+//     overflowY: 'scroll',
+//     height: 'calc(100vh - 4.5rem)',
+//     marginTop: -6,
+//     marginBottom: 0,
+//     paddingTop: 0,
+//     flexGrow: 1
+//   },
+  
   center: {
-    position: 'absolute',
-    top: '-15rem',
+    flexGrow: 1,
+    height: "100vh",
     overflowY: 'scroll',
-    height: 'calc(100vh - 50px)'
+  },
 
-  }, 
   card: {
-      marginTop: 50
+    marginTop: theme.spacing(1),
+    // paddingTop: '50px'
   },
   cardButton:{
       position: 'relative',
@@ -76,11 +92,29 @@ const useStyles = makeStyles((theme) => ({
     ...theme.mixins.toolbar,
     justifyContent: 'flex-end',
   },
+  shopCard: {
+      position: 'absolute',
+      right: '0px'
+  },
+  numberField: {
+      position: 'absolute',
+      right: '5rem',
+      marginBottom: theme.spacing(2),
+      maxWidth: 61
+  },
+  delete: {
+      position: 'absolute',
+      color: 'red',
+      backgroundColor: '#FAEBD7'
+  },
+  navbar: {
+    overflow: 'hidden',   
+    marginBottom: theme.spacing(4),
+
+}
   
-
+  
 }));
-
-const numbers = [1,2,3,4];
 
 
 export default function MainMerchant (props) {
@@ -103,59 +137,144 @@ export default function MainMerchant (props) {
         created_at: '',
         creditCard: '',
         shabaCode: '', 
-        product: ''
+        product: []
     })
+    const [counter, setCounter] = useState(0);
     
     useEffect(() => {
             axios.get('/api/get-merchant-info' + '?id=' + merchatId)
             .then(response => {
-                // setState({
-                //     product: response.data.product, 
-                //     name: response.data.name, 
-                //     isMerchant: response.data.is_merchant,
-                //     merchantLogo: response.data.merchant_logo,
-                //     firstName: response.data.first_name,
-                // })
-                return response.data();
-            }).catch(error => console.log(error));
-            // axios.Cancel();
-    })
-
-
-    const renderProducts = () => {
+                setState({
+                    product: response.data.product,
+                    name: response.data.name, 
+                    isMerchant: response.data.is_merchant,
+                    merchantLogo: response.data.merchant_logo,
+                    firstName: response.data.first_name,
+                })
         
+            }).catch(error => console.log(error));
+
+
+    }, [counter])
+
+    const deleteProduct = (id) => {
+        axios.delete(`/api/create-product?product_id=${id}`)
+        .then(response => setCounter(counter + 1))
+    }
+
+    const [dialog, setDialog] = useState({
+        open: false,
+        ok: null,
+        id: ''
+    });
+
+    const returnDialog = () => {
+        const handleCloseCancel = () => {
+            setDialog({
+                ...dialog,
+                open: false,
+                ok: false
+            });
+
+        }
+
+        const handleCloseOk = () => {
+            setDialog({
+                ...dialog,
+                open: false,
+                ok: true
+            });
+        }
+
+        if (dialog.ok) {
+            deleteProduct(dialog.id);
+            setDialog({
+                ...dialog,
+                ok: null,
+                id: ''
+            })
+        }
+
+
+        return (
+        <AlertDialog 
+            open={dialog.open} 
+            handleCloseOk={handleCloseOk} 
+            handleCloseCancel={handleCloseCancel}
+            title='Delete Product' 
+            content='Are you sure to delete product?'
+             />
+        );
+    }
+    
+    
+    const renderProducts = (product_name, product_description, price, quantity, image, id) => {
+        if (product_description.length > 44) {
+            product_description = product_description.substr(0, 44) + ' ...'
+        }
+        let limit = 2000000;
+        if (price > limit) console.log(price.length);
+
         return (
         <Card className={classes.root}>
         <CardActionArea>
             <CardMedia
-            className={classes.media}
-            image="/static/images/cards/index.jpg"
-            title="Contemplative Reptile"
-            maxWidth='100'
-            />
+                className={classes.media}
+                image={image}
+                title="Contemplative Reptile"
+                maxWidth='100'
+                >
+                <div className={classes.delete} onClick={() => {
+                    setDialog({...dialog, open: true, id: id});
+                    }}>
+                    <DeleteOutlineIcon />
+                </div>
+                </CardMedia>
             <CardContent>
-            <Typography gutterBottom variant="h5" component="h2">
-                Lizard
-            </Typography>
-            <Typography variant="body2" color="textSecondary" component="p">
-                tuhterueriugjregjihi
-                dasdasda 
-            </Typography>
+                <Grid container spacing={1}>
+                    <Grid item xs={12} align='center'>
+                        <Typography variant='h6' compact='h6'> {product_name}</Typography>
+                    </Grid>
+                    <Grid item xs={12} align='center'>
+                        <Typography variant='p'> {product_description} </Typography>
+                    </Grid>
+                    <Grid item xs={6} >
+                        <Typography variant='subtitle1' >Price: {price.toString()}</Typography>
+                    </Grid>
+                </Grid>
             </CardContent>
         </CardActionArea>
         <CardActions>
-            
                 <VisibilityIcon /> 
                     <Typography variant='body2' color='default'>
-                        23
+                        0
                     </Typography>
                 <ShoppingCartIcon />
                     <Typography variant='body2' color='default'>
-                        12
+                        0
                     </Typography>
-                <Button size='small' spacing={2}>
+                    <TextField
+                        id="quantity"
+                        label='quantity'
+                        type="number"
+                        InputLabelProps={{
+                            shrink: true,
+                        }}
+                        InputProps={{
+                            inputProps: { 
+                                max: 1000, min: 0
+                            }
+                        }}
+                        value={quantity}
+                        defaultValue={quantity}
+                        size='small'
+                        className={classes.numberField}
+                        />
+                    <div className={classes.shopCard}>
+                <Button size='small'>
                     <AddShoppingCartIcon />
                 </Button>
+                </div>
         </CardActions>
         </Card>
         );
@@ -166,6 +285,11 @@ export default function MainMerchant (props) {
     }
     const renderDrawer = () => {
         const itemList = [
+            {
+                text: 'Home',
+                icon: <HomeIcon />,
+                onClick: () => window.location.replace('/')
+            },
             {
                 text: 'Purchased Product',
                 icon: <ShoppingCartIcon />,
@@ -229,13 +353,16 @@ export default function MainMerchant (props) {
         );
     }
 
-
+    const returnProductPage = () => {
+        return window.location.replace(`/make-product/${merchatId}`);
+    }
+    
     return (
         
-        <Grid container spacing={2} className={classes.center} alignItems='center'>
+        <Grid container spacing={2} className={classes.center} alignItems='flex-start' >
                             {renderDrawer()}
-            <Grid item xs={12} align='center'>
-            <AppBar position="absolute">
+            <Grid item xs={12} align='center' className={classes.navbar}>
+                <AppBar position="absolute">
                         <Toolbar>
                         <IconButton 
                             edge="start" 
@@ -243,7 +370,7 @@ export default function MainMerchant (props) {
                             color="inherit" 
                             aria-label="menu"
                             onClick={() => setOpen(true)}
-                            
+ 
                             >
                             <MenuIcon />
                         </IconButton>
@@ -251,7 +378,10 @@ export default function MainMerchant (props) {
                             {state.name}
                         </Typography>
                         {/* <Button color="inherit">Login</Button> */}
-                        <Button color="inherit"> <AddShoppingCartIcon /> Add Product </Button>
+                        <Button color="inherit" onClick={() => returnProductPage()} >
+                             <AddShoppingCartIcon />
+                            Add Product
+                            </Button>
                         <Avatar alt={state.firstName} src={state.merchantLogo} />
                             <Typography variant='body2' color='default'>
                                     
@@ -259,13 +389,13 @@ export default function MainMerchant (props) {
 
                         </Toolbar>
                     </AppBar>
-            </Grid>  
-            {numbers.map((number) => (
-                <Grid item xs={12} md={4} align='center' className={classes.card}>
-                {renderProducts()}
+            </Grid>
+            {state.product && state.product.map((product) => (
+                <Grid item xs={12} md={4} lg={4} align='center' className={classes.card}>
+                {renderProducts(product.product_name, product.product_description, product.price, product.quantity, product.product_image, product.id)}
             </Grid>
             ))}
-           
+            {returnDialog()}
         </Grid>
       );
 }

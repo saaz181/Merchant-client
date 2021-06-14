@@ -1,56 +1,111 @@
-import React, {useState, useEffect} from 'react';
+import React, {Component, useState} from 'react';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
+import Typography from '@material-ui/core/Typography';
+import { Divider, Grid } from '@material-ui/core';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import IconButton from '@material-ui/core/IconButton';
+import MenuIcon from '@material-ui/icons/Menu';
+import VisibilityIcon from '@material-ui/icons/Visibility';
+import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
+import Avatar from '@material-ui/core/Avatar';
 import { 
     Drawer as MUIDrawer, 
     List,
     ListItem, 
     ListItemIcon, 
-    ListItemText
+    ListItemText,
+    
 } from '@material-ui/core';
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import StorageIcon from '@material-ui/icons/Storage';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import { Divider } from '@material-ui/core';
-import VisibilityIcon from '@material-ui/icons/Visibility';
-import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import StorageIcon from '@material-ui/icons/Storage';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import HomeIcon from '@material-ui/icons/Home';
+
 
 const useStyles = makeStyles((theme) => ({
+    root: {
+      position:'relative',
+      maxWidth: 400,
+      // marginBottom: theme.spacing(2),
+      marginRight: theme.spacing(1),
+      marginLeft: theme.spacing(1),
+      marginTop: theme.spacing(1),
+    },
+  
+    media: {
+      height: 140,
+    },
+    menuButton: {
+      marginRight: theme.spacing(1),
+    },
+  
+    title: {
+      flexGrow: 1,
+    },
+    center: {
+      position: 'absolute',
+      top: '-15rem',
+      overflowY: 'scroll',
+      height: 'calc(100vh - 50px)',
+      marginTop: -6,
+      marginBottom: 0
+      
+    }, 
+    card: {
+        marginTop: '1.5rem'
+    },
+    cardButton:{
+        position: 'relative',
+        alignItems: 'center'
+    },
+    drawer: {
+        width: '140px',
+    },
     drawerHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        padding: theme.spacing(0, 1),
-        // necessary for content to be below app bar
-        ...theme.mixins.toolbar,
-        justifyContent: 'flex-end',
-      },
-      root: {
-        flexGrow: 1,
-        height: "80vh",
-        overflow: 'auto'
-      },
+      display: 'flex',
+      alignItems: 'center',
+      padding: theme.spacing(0, 1),
+      // necessary for content to be below app bar
+      ...theme.mixins.toolbar,
+      justifyContent: 'flex-end',
+    },
+    shopCard: {
+        position: 'absolute',
+        right: '0px'
+    },
+    numberField: {
+        position: 'absolute',
+        right: '5rem',
+        marginBottom: theme.spacing(2)
+    }
+    
+  }));
   
-      menuButton: {
-        marginRight: theme.spacing(2),
-      },
-  
-      title: {
-        flexGrow: 1,
-      },
-}))
 
-export default function renderDrawer (props) {
+
+
+
+
+export default function makeProduct (props) {
     const {history} = props;
+    const classes = useStyles();
     const theme = useTheme();
 
-    const [open, setOpen] = useState(false);
-        const handleDrawerClose = () => {
-            setOpen(false);
-        }
-    
-    const itemList = [
+    const [open, setOpen] = React.useState(false);
+    const handleDrawerClose = () => {
+        setOpen(false);
+    }
+    const renderDrawer = () => {
+        const itemList = [
+            {
+                text: 'Home',
+                icon: <HomeIcon />,
+                onClick: () => window.location.replace('/')
+            },
             {
                 text: 'Purchased Product',
                 icon: <ShoppingCartIcon />,
@@ -85,8 +140,7 @@ export default function renderDrawer (props) {
         ];
         
 
-    return (
-            <div>
+        return (
         <MUIDrawer 
             variant='temporary' 
             open={open} 
@@ -112,8 +166,14 @@ export default function renderDrawer (props) {
             })}
             </List>
         </MUIDrawer>
-        
-        <AppBar position="absolute">
+        );
+    }
+
+    return (
+        <Grid container spacing={2} className={classes.center} alignItems='center'>
+                            {renderDrawer()}
+            <Grid item xs={12} align='center' style={{marginBottom: 32}}>
+            <AppBar position="absolute">
                         <Toolbar>
                         <IconButton 
                             edge="start" 
@@ -126,19 +186,18 @@ export default function renderDrawer (props) {
                             <MenuIcon />
                         </IconButton>
                         <Typography variant="h6" className={classes.title}>
-                            {state.name}
+                            {/* {state.name} */}
                         </Typography>
                         {/* <Button color="inherit">Login</Button> */}
-                        <Button color="inherit"> <AddShoppingCartIcon /> Add Product </Button>
-                        <Avatar alt={state.firstName} src={state.merchantLogo} />
+                        
+                        <Avatar />
                             <Typography variant='body2' color='default'>
                                     
                             </Typography>
 
                         </Toolbar>
                     </AppBar>
-        </div>
-        
-        );
-    
+            </Grid>
+        </Grid>
+    );
 }

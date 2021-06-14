@@ -11,8 +11,12 @@ import { Alert, AlertTitle } from '@material-ui/lab';
 
 const useStyles = makeStyles((theme) => ({
   root1: {
-    width: '100%'
+    width: '100%',
+    top: '40%',
+    // left: '10%',
+    marginTop: '10%',
   },
+
   backButton1: {
     marginTop: theme.spacing(1),
     marginRight: theme.spacing(1),
@@ -21,11 +25,13 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
   },
+
   StepButtons: {
-      position: 'absolute',
+    position: 'absolute',
     marginTop: 25,
     marginLeft: '70%'
   },
+
   nextButton1: {
     marginTop: theme.spacing(1),
   
@@ -44,7 +50,7 @@ function getSteps() {
 
 
 export default function HorizontalLabelPositionBelowStepper(props) {
-  
+  console.log(props);
     function getStepContent(stepIndex) {
         switch (stepIndex) {
             case 0:

@@ -1,4 +1,5 @@
 from requests import post, get
+import requests
 from .credentials import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from .models import GoogleToken
 from django.utils import timezone
@@ -67,14 +68,21 @@ def refresh_google_oauth(session_id):
         refresh_token
     )    
 
-def get_information_from_goole(session_id):
+def get_information_from_google(session_id):
     tokens = get_user_tokens(session_id)
+    endpoint = 'https://openidconnect.googleapis.com/v1/userinfo'
 
     headers = {
         'Content-Type': 'application/json', 
         'Authentication': 'Bearer ' + tokens.access_token}
+    
+    data = {
+        'access_token': tokens.access_token
+    }
 
+    response = requests.get(endpoint, headers=headers, params=data)
 
+    return response.json()
 
 
 

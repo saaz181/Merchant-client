@@ -1,51 +1,40 @@
-import React, {Component, useState} from 'react';
+import React, { useEffect, useState} from 'react';
 import Button from '@material-ui/core/Button';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
-import Typography from '@material-ui/core/Typography';
-import { Divider, Grid } from '@material-ui/core';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
-import VisibilityIcon from '@material-ui/icons/Visibility';
-import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
-import Avatar from '@material-ui/core/Avatar';
 import { 
-    Drawer as MUIDrawer, 
-    List,
-    ListItem, 
-    ListItemIcon, 
-    ListItemText,
-    TextField
+    Grid,
+    TextField, 
+    Card,
+    CardActionArea,
+    CardActions,
+    CardContent,
+    CardMedia
 } from '@material-ui/core';
 import axios from 'axios';
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import VisibilityIcon from '@material-ui/icons/Visibility';
+import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import StorageIcon from '@material-ui/icons/Storage';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import HomeIcon from '@material-ui/icons/Home';
 import StoreIcon from '@material-ui/icons/Store';
-import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
-import CardActions from '@material-ui/core/CardActions';
-import CardContent from '@material-ui/core/CardContent';
-import CardMedia from '@material-ui/core/CardMedia';
 import DoneIcon from '@material-ui/icons/Done';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
-import ResponsiveDialog from './dialog';
+import Header from './Header';
+import TreeItem from '@material-ui/lab/TreeItem';
+import TreeView from '@material-ui/lab/TreeView';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+
 
 
 const useStyles = makeStyles((theme) => ({
     root: {
       position:'relative',
-      maxWidth: 400,
-      // marginBottom: theme.spacing(2),
-      marginRight: theme.spacing(1),
-      marginLeft: theme.spacing(1),
-      marginTop: theme.spacing(5),
+      marginRight: theme.spacing(5),
+      marginLeft: theme.spacing(5),
     },
   
     media: {
@@ -59,11 +48,9 @@ const useStyles = makeStyles((theme) => ({
       flexGrow: 1,
     },
     center: {
-      position: 'absolute',
-      top: '-15rem',
-      overflowY: 'scroll',
-      height: 'calc(100vh - 20px)',
-      marginTop: -6,
+        flexGrow: 1,
+        height: '100vh',
+        overflowY: 'scroll'
       
     }, 
     card: {
@@ -72,17 +59,6 @@ const useStyles = makeStyles((theme) => ({
     cardButton:{
         position: 'relative',
         alignItems: 'center'
-    },
-    drawer: {
-        width: '140px',
-    },
-    drawerHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: theme.spacing(0, 1),
-      // necessary for content to be below app bar
-      ...theme.mixins.toolbar,
-      justifyContent: 'flex-end',
     },
     shopCard: {
         position: 'absolute',
@@ -96,8 +72,6 @@ const useStyles = makeStyles((theme) => ({
         marginRight: theme.spacing(1),
 
     },
-    
-
     numberField: {
         position: 'absolute',
         right: '5rem',
@@ -113,30 +87,74 @@ const useStyles = makeStyles((theme) => ({
     },
     input: {
         display: 'none',
-      },
+    },
     productName: {
         marginBottom: theme.spacing()
+    },
+    scroll: {
+        overflowY: 'scroll',
+        height: '100vh'
     }
       
-  }));
+}));
   
-
-
-
-
 
 export default function makeProduct (props) {
     const merchantId = props.match.params.merchantId;
     const {history} = props;
+    const {location} = props;
     const classes = useStyles();
     const theme = useTheme();
+    const itemList = [
+        {
+            text: 'Home',
+            icon: <HomeIcon />,
+            onClick: () => window.location.replace('/')
+        },
+        {
+            text: 'Merchant Page',
+            icon: <StoreIcon />,
+            onClick: () => window.location.replace(`/merchant/${merchantId}`)
+        },
+        {
+            text: 'Purchased Product',
+            icon: <ShoppingCartIcon />,
+            onClick: () => history.push('/purchased-product')
+        },
+        {
+            text: 'Views',
+            icon: <VisibilityIcon />,
+            onClick: () => history.push('/views'),
+        },
+        {
+            text: 'Orders',
+            icon: <StorageIcon />,
+            onClick: () => history.push('/orders')
+        },
+        {
+            text: 'active Product',
+            icon: <AssignmentTurnedInIcon />,
+            onClick: () => history.push('/active')
+        },
+        {
+            text: 'Run out',
+            icon: <HourglassEmptyIcon />,
+            onClick: () => history.push('/run-out')
+        },
+        {
+            text: 'Account Info',
+            icon: <AccountCircleIcon />,
+            onClick: () => history.push('/account-info')
+        },
+        
+    ];
     
     const [logoPic, setLogoPic] = useState();
     const [type, setType] = useState({
         type: '',
         message: ''
     })
-    const [open, setOpen] = React.useState(false);
+
     const [snack ,setSnack] = useState(false);
     const [LoadedImage, setLoadedImage] = useState('');
     const [state, setState] = useState({
@@ -144,96 +162,125 @@ export default function makeProduct (props) {
         price: '',
         offPrice: '',
         description: '',
-        quantity: 0
+        quantity: 0,
+        id: '',
     })
+    const [category, setCategory] = useState({
+        category: [],
+        sub_category: [],
+        sub_sub_category: [],
+    });
 
-    const handleDrawerClose = () => {
-        setOpen(false);
-    }
-    const renderDrawer = () => {
-        const itemList = [
-            {
-                text: 'Home',
-                icon: <HomeIcon />,
-                onClick: () => window.location.replace('/')
-            },
-            {
-                text: 'Merchant Page',
-                icon: <StoreIcon />,
-                onClick: () => window.location.replace(`/merchant/${merchantId}`)
-            },
-            {
-                text: 'Purchased Product',
-                icon: <ShoppingCartIcon />,
-                onClick: () => history.push('/purchased-product')
-            },
-            {
-                text: 'Views',
-                icon: <VisibilityIcon />,
-                onClick: () => history.push('/views'),
-            },
-            {
-                text: 'Orders',
-                icon: <StorageIcon />,
-                onClick: () => history.push('/orders')
-            },
-            {
-                text: 'active Product',
-                icon: <AssignmentTurnedInIcon />,
-                onClick: () => history.push('/active')
-            },
-            {
-                text: 'Run out',
-                icon: <HourglassEmptyIcon />,
-                onClick: () => history.push('/run-out')
-            },
-            {
-                text: 'Account Info',
-                icon: <AccountCircleIcon />,
-                onClick: () => history.push('/account-info')
-            },
-            
-        ];
+    const editData = () => {
+        const editedformData = new FormData();
+        editedformData.append('product_name', state.productName);
+        editedformData.append('product_description', state.description);
+        editedformData.append('price', state.price);
+        editedformData.append('quantity', state.quantity);
         
+        // cause an error if picture or off price be empty
+        if (logoPic) editedformData.append('product_image', logoPic);
+        if (state.offPrice) editedformData.append('off', state.offPrice);
 
+        axios.put('/api/create-product' + '?product_id=' + state.id, editedformData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+        .then(response => {
+            setLogoPic('');
+            setState({
+                ...state,
+                productName: '',
+                description: '',
+                price: '',
+                quantity: 0,
+                offPrice: ''
+            });
+            setType({
+                type: 'success',
+                message: 'Product SuccessFully Updated'
+            })
+        })
+
+        .catch(error => {
+            setType({
+            type: 'error',
+            message: 'Please Chack if You enter information correctely!'
+        })
+    }
+        )
+
+        setSnack(true);
+    }
+
+    useEffect(() => {
+        const data = location.state;
+        if (data) {
+        setState({
+            ...state,
+            productName: data.productName,
+            price: data.price,
+            offPrice: data.offPrice,
+            description: data.description,
+            quantity: data.quantity,
+            id: data.id
+        });
+        setLoadedImage(data.uploadedImage);  
+        }
+    }, [])    
+    
+    
+    useEffect(() => {
+        axios.get('/api/category')
+        .then(response => setCategory({
+            ...category,
+            category: response.data
+        }))
+    }, [])
+
+
+    const flatData = () => {
+        let x = 0;
+        if (category.category.length != 0) {
         return (
-        <MUIDrawer 
-            variant='temporary' 
-            open={open} 
-            onBackdropClick={handleDrawerClose}
-            onEscapeKeyDown={handleDrawerClose}
-            className={classes.drawer}
+            <TreeView
+            defaultCollapseIcon={<ExpandMoreIcon />}
+            defaultExpandIcon={<ChevronRightIcon />}
             >
-        <div className={classes.drawerHeader}>
-        <IconButton onClick={handleDrawerClose}>
-                {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </IconButton>
-          </div>
-                <Divider />
-            <List>
-                {itemList.map((item, index) => {
-                const { text, icon, onClick } = item;
+            {category.category && category.category.map((item) => {
+                const {id, title, description, sub_category} = item;
                 return (
-                <ListItem button key={text} onClick={onClick}>
-                    {icon && <ListItemIcon>{icon}</ListItemIcon>}
-                <ListItemText primary={text} />
-                </ListItem>
+                    <TreeItem nodeId={x++} label={title}>
+                        {sub_category && sub_category.map(item1 => {
+                            const {id, title, description, sub_category} = item1;
+                            return (
+                                <TreeItem nodeId={id} label={title} >
+                                    {sub_category && sub_category.map(item2 => {
+                                        const {id, title, description} = item2;
+                                        return (
+                                            <TreeItem nodeId={id} label={title} />
+                                        );
+                                    })}
+                                </TreeItem>
+                            );
+                        })}
+                    </TreeItem>
                 );
             })}
-            </List>
-        </MUIDrawer>
+            
+            </TreeView>
         );
     }
+    
+}
+
 
     const renderAlert = () => {
         function Alert(props) {
             return <MuiAlert elevation={6} variant="filled" {...props} />;
           }
 
-          const handleClick = () => {
-            setSnack(true);
-          };
-        
           const handleClose = (event, reason) => {
             if (reason === 'clickaway') {
               return;
@@ -258,12 +305,11 @@ export default function makeProduct (props) {
         const formData = new FormData();
         formData.append('product_name', state.productName);
         formData.append('product_description', state.description);
-        formData.append('product_image', logoPic);
         formData.append('price', state.price);
         formData.append('quantity', state.quantity);
-        formData.append('off', state.offPrice);
-        
-        
+        if (logoPic) formData.append('product_image', logoPic);
+        if (state.offPrice) formData.append('off', state.offPrice);
+
         axios.post('/api/create-product', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
@@ -297,7 +343,7 @@ export default function makeProduct (props) {
     const renderProducts = () => {
         const handleFileChange = event => {
             const uploadedImage = event.target.files[0];
-            console.log(uploadedImage);
+            console.log(logoPic);
             const objectUrl = URL.createObjectURL(uploadedImage);
             setLoadedImage(objectUrl);
             
@@ -390,6 +436,7 @@ export default function makeProduct (props) {
                         value={state.quantity}
                         onChange={(event) => setState({...state, quantity: event.target.value})}
                         />
+                        
         </CardActions>
         </Card>
         );
@@ -429,28 +476,7 @@ export default function makeProduct (props) {
                             onChange={(event) => setState({...state, description: event.target.value})}
                             />
                     </Grid>
-                    
-                </Grid>
-            </CardContent>
-        <CardActions>
-            <div className={classes.shopCard2}>
-                        <Button size='small' style={{backgroundColor : '#7FFF00'}} onClick={() => CreateProduct()}>
-                            <DoneIcon />
-                        </Button>
-                    </div>
-                                    
-        
-        </CardActions>
-        </Card>
-        );
-    }
-
-    const renderOffInfo = () => {
-        return (
-                <Card className={classes.root}>
-                <CardContent>
-                    <Grid container spacing={1}>
-                        <Grid item xs={12} align='center'>
+                    <Grid item xs={12} align='center'>
                             <TextField
                                 id="off"
                                 label='off-price'
@@ -464,65 +490,63 @@ export default function makeProduct (props) {
                                 onChange={(event) => setState({...state, offPrice: event.target.value})}
                                 />
                         </Grid>
-                    </Grid>
-                </CardContent>
-            
-            </Card>
-            );
-        
+                    
+                </Grid>
+            </CardContent>
+        <CardActions>
+            <div className={classes.shopCard2}>
+                        {state.id ? 
+                                <Button 
+                                size='small' 
+                                style={{backgroundColor : '#7FFFD4'}} 
+                                onClick={() => editData()}>
+                                <DoneIcon />
+                            </Button>
+                            :
+                            <Button 
+                            size='small' 
+                            style={{backgroundColor : '#7FFF00'}} 
+                            onClick={() => CreateProduct()}>
+                            <DoneIcon />
+                        </Button>
+                    }
+                    </div>
+        </CardActions>
+        </Card>
+        );
     }
-
     return (
-        <Grid container spacing={1} className={classes.center} alignItems='center'>
-                            {renderDrawer()}
-            <Grid item xs={12} align='center'>
-                <AppBar position="absolute">
-                        <Toolbar>
-                        <IconButton 
-                            edge="start" 
-                            className={classes.menuButton} 
-                            color="inherit" 
-                            aria-label="menu"
-                            onClick={() => setOpen(true)}
-                            
-                            >
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography variant="h6" className={classes.title}>
-                            {/* {state.name} */}
-                        </Typography>
-                        {/* <Button color="inherit">Login</Button> */}
-                        
-                        <Avatar />
-                            <Typography variant='body2' color='default'>
-                                    
-                            </Typography>
-
-                        </Toolbar>
-                    </AppBar>
+        <Grid container direction='column' className={classes.scroll}>
+        <Grid item>
+            <Grid item>
+                <Header companyName={location.state.name}
+                        itemList={itemList}
+                        picture={location.state.logo}
+                        />
             </Grid>
-            <Grid item xs={12} md={6} align='center'>
-                {renderProducts()}
-            </Grid>
-            <Grid item xs={12} md={6} align='center'>
-                {renderOffInfo()}
-            </Grid>
-            <Grid item xs={12} md={12} align='center'>
-                {renderDetail()}
-            </Grid>
-            <div>
-                {renderAlert()}
-            </div>
-            <Grid item xs={12} md={6} align='center' style={{marginBottom: '5em'}}>
-                <Button 
+            <Grid item container>
+                <Grid item xs={12} sm={4}>
+                    {renderProducts()}
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    {renderDetail()}
+                    <Button 
                     color='secondary' 
                     variant='contained' 
                     size='small' 
                     onClick={() => history.push(`/merchant/${merchantId}`)}
+                    style={{marginLeft: theme.spacing(2), marginTop: theme.spacing(2)}}
                     >
                     Back
                 </Button>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                    {flatData()}
+                </Grid>
             </Grid>
+            {renderAlert()}
+            <Grid item xs={0} sm={2} />
         </Grid>
+    </Grid>
     );
 }

@@ -1,108 +1,69 @@
-import React, {useDebugValue, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import { 
     BrowserRouter as Router, 
     Switch, 
-    Route, 
-    Link,
-    Redirect
+    Route,
+    Link
 } from "react-router-dom";
-
-import { 
-    Grid, 
-    Button, 
-    ButtonGroup, 
-    Typography 
-    } from "@material-ui/core";
-import MerchantPage from './MerchantPage';
-import MainMerchant from './MainMerchant';
+import { Grid, Button } from "@material-ui/core";
 import HorizontalLabelPositionBelowStepper from './CreateMerchant';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
-import UserPage from './UserPage';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 import VisibilityIcon from '@material-ui/icons/Visibility';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
-import { 
-    Drawer as MUIDrawer, 
-    List,
-    ListItem, 
-    ListItemIcon, 
-    ListItemText
-} from '@material-ui/core';
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import StorageIcon from '@material-ui/icons/Storage';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import {  Divider } from '@material-ui/core';
 import axios from 'axios';
-import Avatar from '@material-ui/core/Avatar';
 import StoreIcon from '@material-ui/icons/Store';
 import makeProduct from './makeProduct';
-import ScrollableTabsButtonPrevent from './dialog';
+import AccountInfo from './AccountInfo';
+import RecipeReviewCard from './new';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+import VpnKeyIcon from '@material-ui/icons/VpnKey';
+import Header from './Header';
+import UserPage from './UserPage';
+import MainMerchant from './MainMerchant';
+import productPage from './productPage';
+import Content from './content';
+import Cart from './Cart';
+import CustomizedSnackbars from './snackBar';
+import {useDispatch} from 'react-redux';
+import { addToCartCount } from '../actions';
+
 
 const useStyles = makeStyles((theme) => ({
-    root: {
-      flexGrow: 1,
-      height: "80vh",
-      overflow: 'auto'
-    },
-
-    menuButton: {
-      marginRight: theme.spacing(2),
-    },
-
-    title: {
-      flexGrow: 1,
-      right: 20,
-    },
-    drawerHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        padding: theme.spacing(0, 1),
-        // necessary for content to be below app bar
-        ...theme.mixins.toolbar,
-        justifyContent: 'flex-end',
-      },
-    navbar: {
-        overflow: 'hidden',    
+    scroll: {
+        overflowY: 'scroll',
+        height: '100vh'
     }
       
 
   }));
 
-
 export default function Homepage (props) {
     const classes = useStyles();
     const theme = useTheme();
+    const {history} = props;
+    const dispatch = useDispatch();
 
-    const [open, setOpen] = useState(false);
     const [authenticated, setAuthenticated] = useState(false);
     const [state, setState] = useState({
         name: '',
         picture: '',
         merchant_id: '',
     });
+    const [createMerchant, setCreateMerchant] = useState(true);
+    const [allProduct, setAllProduct] = useState([]);
+    const [cartItem, setCartItem] = useState([]);
 
-    const handleDrawerClose = () => {
-        setOpen(false);
-    }
-    const checkForMerchant = () => {
-        if (authenticated && state.merchant_id){
-            return () => window.location.replace(`merchant/${state.merchant_id}`);
-        }
-        return null;
-    }
-
-    const renderDrawer = () => {
-        const itemList = [
+const itemList = [
             {
-                text: 'Merchant Page',
+                text: <Link to={{pathname: `merchant/${state.merchant_id}`}}
+                            style={{textDecoration : 'none', color: 'inherit'}}>
+                                Merchant Page </Link>,
                 icon: <StoreIcon />,
-                onClick: checkForMerchant()
+                onClick: null
             },
             {
                 text: 'Purchased Product',
@@ -122,7 +83,7 @@ export default function Homepage (props) {
             {
                 text: 'active Product',
                 icon: <AssignmentTurnedInIcon />,
-                onClick: () => history.push('/active')
+                onClick: () => window.location.replace('/active-product')
             },
             {
                 text: 'Run out',
@@ -132,40 +93,21 @@ export default function Homepage (props) {
             {
                 text: 'Account Info',
                 icon: <AccountCircleIcon />,
-                onClick: () => history.push('/account-info')
+                onClick: () => window.location.replace('/account-info')
             },
-            
+            {
+                text: 'Log-out',
+                icon: <ExitToAppIcon />,
+                onClick: () => {if (authenticated) {logOut(); window.location.reload()}}
+            },
+            {
+                text: 'Log-in',
+                icon: <VpnKeyIcon />,
+                onClick: () => authentication()
+                
+            }
         ];
         
-
-        return (
-        <MUIDrawer 
-            variant='temporary' 
-            open={open} 
-            onBackdropClick={handleDrawerClose}
-            onEscapeKeyDown={handleDrawerClose}
-            className={classes.drawer}
-            >
-        <div className={classes.drawerHeader}>
-        <IconButton onClick={handleDrawerClose}>
-                {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </IconButton>
-          </div>
-                <Divider />
-            <List>
-                {itemList.map((item, index) => {
-                const { text, icon, onClick } = item;
-                return (
-                <ListItem button key={text} onClick={onClick}>
-                    {icon && <ListItemIcon>{icon}</ListItemIcon>}
-                <ListItemText primary={text} />
-                </ListItem>
-                );
-            })}
-            </List>
-        </MUIDrawer>
-        );
-    }
 
     const authentication = () => {
         fetch('/api/google-get-auth-url')
@@ -187,6 +129,10 @@ export default function Homepage (props) {
                 ...state,
                 merchant_id: response.data.merchant_id
             })
+            if (!response.data.merchant_id) {
+                setMerchantCreation(true)
+                setCreateMerchant(false);
+            };
         });
     }, [state.merchant_id])
 
@@ -194,6 +140,7 @@ export default function Homepage (props) {
         fetch('/api/is-user-authenticated')
         .then(response => response.json())
         .then((data) => setAuthenticated(data.status))
+
     }, [authenticated])
 
 
@@ -212,58 +159,63 @@ export default function Homepage (props) {
         
     }, [authenticated])
 
-    
-    
+    useEffect(() => {
+        axios.get('/api/product')
+        .then(response => setAllProduct(response.data))
+    }, [])
+
+
+    useEffect(() => {
+        axios.post('/api/create-user')
+    } ,[])
+
+    const addToCart = (idx) => {
+        axios.post('/api/create-cart', {
+            product: idx,
+            quantity: 1
+        })
+        .then(res => {
+            if (res.status == 200)
+                dispatch(addToCartCount(1));
+        })
+        
+    }
+
+    useEffect(() => {
+        axios.get('/api/create-cart')
+        .then(res => {
+              dispatch(addToCartCount(res.data.length));
+        })
+    }, [])
 
     function renderMerchantPage() {
-        return (
-            <Grid container spacing={0} alignItems='center' className={classes.root} alignContent='stretch'>
-                 {renderDrawer()}
-                <Grid item xs={12} align='center' className={classes.navbar} >                    
-                    <AppBar position="absolute" >
-                        <Toolbar>
-                        <IconButton
-                             edge="start" 
-                             className={classes.menuButton} 
-                             color="inherit" 
-                             aria-label="menu"
-                             onClick={() => setOpen(true)}
-                             >
-                            <MenuIcon />
-                        </IconButton>
-                        
-                        {!authenticated ? <div>
-                            <Button color="inherit" onClick={() => authentication()}>Login</Button>
-                            <Button color="inherit" onClick={() => authentication()}>Sign-up</Button>
-                        </div>
+        return(
+            <Grid container direction='column' className={classes.scroll}>
+        <Grid item>
+            <Grid item>
+                <Header companyName={state.name} itemList={itemList} picture={state.picture}  cartLength={cartItem} />
+            </Grid>
+            <Grid item container>
+                <Grid item xs={12} sm={2} >
+                {createMerchant ? 
+                        null
                         :
-                        <div>
-                            <Button color="inherit" onClick={() => logOut()}>logout</Button>
-                            <Button color="inherit">{state.name}
-                            <Avatar alt={state.name} src={state.picture} style={
-                                {
-                                    marginLeft: 10
-                                }
-                            } />
-                            </Button>
-                        </div>
-                    }
-                                        
-                        </Toolbar>
-                    </AppBar>
+                    <Button color='primary' to='/merchant' component={Link} disabled={!authenticated}>Merchant</Button>
+                }
                 </Grid>
-
-                <Grid item xs={12} align='center' spacing={0}>
-                    <Typography variant='h4' compact='h4'> Music Communication </Typography>
-                </Grid>
-        
-                <Grid item xs={12} align='center'>
-                    <ButtonGroup disableElevation variant='contained' color='primary'>
-                        <Button color='primary' to='/merchant' component={Link} disabled={!authenticated}>Merchant</Button>
-                        <Button color='secondary' to='/user' component={Link}>Customer</Button>
-                    </ButtonGroup>
+                <Grid item xs={12} sm={8} >
+                    <Content 
+                            product={allProduct}
+                            isMerchant={false}
+                            cart={addToCart}
+                            />
                 </Grid>
             </Grid>
+            <Grid item xs={0} sm={2}>
+                <CustomizedSnackbars message="Added to cart" type="success" />  
+            </Grid>
+        </Grid>
+    </Grid>
         );
     }
         
@@ -279,6 +231,10 @@ export default function Homepage (props) {
                 <Route path='/make-product/:merchantId' render={(props) => {
                     return <makeProduct {...props} />
                 }} component={makeProduct} />
+                <Route path='/product/:id/:slug' component={productPage} />
+                <Route path='/account-info' component={AccountInfo} />
+                <Route path='/active-product' component={RecipeReviewCard} />
+                <Route exact path='/cart' render={(props) => <Cart header={<Header companyName={state.name} itemList={itemList} picture={state.picture} cartLength={cartItem} />} {...props} />} />
             </Switch>
         </Router>        
     )

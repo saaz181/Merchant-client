@@ -42,5 +42,10 @@ html, body {
 }
 
 
+#delete:hover {
+    background-color: brown;
+}
 
-
+#edit:hover {
+    color:darkturquoise;
+}

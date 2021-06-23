@@ -1,11 +1,11 @@
-from requests.api import post
-from requests.sessions import session
+from django.db.models.query import QuerySet
 from rest_framework.response import Response
+from rest_framework.serializers import Serializer
 from rest_framework.views import APIView
-from api.models import Merchant
 from django.shortcuts import redirect, render
-from rest_framework import serializers, status, generics
-from .models import GoogleToken, Merchant, Products
+from rest_framework import status, generics
+from rest_framework import mixins
+from .models import *
 from .serializers import *
 from validate_email import validate_email
 from rest_framework.decorators import api_view
@@ -15,7 +15,7 @@ from requests import Request
 from .credentials import *
 import hashlib
 import os
-import base64
+
 
 @api_view(['GET'])
 def email_validator(request, email=None, *args, **kwargs):
@@ -86,7 +86,86 @@ class CreateMerchantView(APIView):
         
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+    
+    def delete(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            merchant_id = request.session.get('merchant_id')
+            merchant = Merchant.objects.get(merchant_id=merchant_id)
+            merchant.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        else:
+            return Response({'UnAuthorized': 'You are not Allowed'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    def put(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            serializer = self.serializer_class(data=request.data)
+
+            if serializer.is_valid():
+                name = serializer.validated_data.get('name')
+                address = serializer.validated_data.get('address')
+                first_name = serializer.validated_data.get('first_name')
+                last_name = serializer.validated_data.get('last_name')
+                phone = serializer.validated_data.get('phone')
+                merchant_logo = serializer.validated_data.get('merchant_logo')
+                country = serializer.validated_data.get('country')
+                province = serializer.validated_data.get('province')
+                city = serializer.validated_data.get('city')
+                email = serializer.validated_data.get('email')
+                credit_card = serializer.validated_data.get('credit_card')
+                shaba_code = serializer.validated_data.get('shaba_code')
+                
+                u_email = request.session.get('email')
+                merchant_id = request.session.get('merchant_id')
+
+                queryset = Merchant.objects.filter(merchant_id=merchant_id, unique_email=u_email)
+                if queryset.exists():
+                    merchant = queryset[0]
+                    merchant.name = name
+                    merchant.address = address
+                    merchant.first_name = first_name
+                    merchant.last_name = last_name
+                    merchant.phone = phone
+                    merchant.merchant_logo = merchant_logo
+                    merchant.country = country
+                    merchant.province = province
+                    merchant.city = city
+                    merchant.email = email
+                    merchant.credit_card = credit_card
+                    merchant.shaba_code = shaba_code
+
+                    if merchant_logo:
+                        merchant.save(update_fields=['name', 
+                                                    'address', 
+                                                    'first_name', 
+                                                    'last_name', 
+                                                    'phone', 
+                                                    'merchant_logo', 
+                                                    'country', 
+                                                    'province', 
+                                                    'city', 
+                                                    'credit_card', 
+                                                    'shaba_code'])
+                    else:
+                        merchant.save(update_fields=['name', 
+                                                    'address', 
+                                                    'first_name', 
+                                                    'last_name', 
+                                                    'phone',  
+                                                    'country', 
+                                                    'province', 
+                                                    'city', 
+                                                    'credit_card', 
+                                                    'shaba_code'])
+
+                else:
+                    return Response({'Not Found': 'Your Account Not Found'}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                print(serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_204_NO_CONTENT)
+
+        else:
+            return Response({'UNAUTHORIZED': 'You are not Allowed'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class GetMerchantInfo(APIView):
@@ -149,7 +228,6 @@ class CreateProductView(APIView):
     lookup_url_kwarg = 'product_id'
     
     def post(self, request, format=None):
-
         if is_authenticated_google(self.request.session.session_key):
             serializer = self.serializer_class(data=request.data)
             
@@ -163,7 +241,11 @@ class CreateProductView(APIView):
                 off = serializer.validated_data.get('off')
                 visited_time = serializer.validated_data.get('visited_time')
                 purchased_time = serializer.validated_data.get('purchased_time')
-
+                
+                # get merchant profile
+                queryset_merchant = Merchant.objects.filter(merchant_id=merchant_id)[0]
+                merchant_logo = queryset_merchant.merchant_logo
+                
                 queryset = Products.objects.filter(merchant_id=merchant_id, product_name=product_name)
                 if queryset.exists():
                     id = queryset[0].id
@@ -175,7 +257,9 @@ class CreateProductView(APIView):
                     quantity=quantity,
                     off=off,
                     visited_time=visited_time,
-                    purchased_time=purchased_time)
+                    purchased_time=purchased_time,
+                    merchant_logo=merchant_logo
+                    )
 
                     product.save(update_fields=['product_description', 'product_image', 'price', 'quantity', 'off', 'visited_time', 'purchased_time'])
                     merchant = Merchant.objects.get(merchant_id=merchant_id)
@@ -184,6 +268,7 @@ class CreateProductView(APIView):
                     return Response(CreateProductSerializer(product).data, status=status.HTTP_201_CREATED)
                 
                 else:
+                    
                     product = Products(merchant_id=merchant_id, 
                                     product_name=product_name, 
                                     product_description=product_description, 
@@ -192,35 +277,284 @@ class CreateProductView(APIView):
                                     quantity=quantity, 
                                     off=off, 
                                     visited_time=visited_time, 
-                                    purchased_time=purchased_time)
+                                    purchased_time=purchased_time,
+                                    merchant_logo=merchant_logo
+                                    )
                     product.save()
                     merchant = Merchant.objects.get(merchant_id=merchant_id)
                     merchant.product.add(product)
 
                     return Response(CreateProductSerializer(product).data, status=status.HTTP_201_CREATED)
-            print(serializer.errors)
-            return Response({'Bad Request': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
+            else:
+                return Response({'Bad Request': serializer.errors}, status=status.HTTP_400_BAD_REQUEST) 
         else:
             return Response({'Unauthorized Request': 'You are not allowed to Create Product'}, status=status.HTTP_401_UNAUTHORIZED)
 
     def delete(self, request, format=None):
-        if is_authenticated_google(self.request.session.session_key):
-            merchant_id = request.session.get('merchant_id')
-            id = request.GET.get(self.lookup_url_kwarg)
-            product = Products.objects.get(merchant_id=merchant_id, id=id)
-            product.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            if is_authenticated_google(self.request.session.session_key):
+                merchant_id = request.session.get('merchant_id')
+                id = request.GET.get(self.lookup_url_kwarg)
+                product = Products.objects.get(merchant_id=merchant_id, id=id)
+                product.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({'Unauthorized Request': 'You are not allowed to Remove Product'}, status=status.HTTP_401_UNAUTHORIZED)
 
+    def put(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):            
+            
+            serializer = self.serializer_class(data=request.data)
+            
+            if serializer.is_valid():
+                id = request.GET.get('product_id')
+                merchant_id = request.session.get('merchant_id')
+                product_name = serializer.validated_data.get('product_name')
+                product_description = serializer.validated_data.get('product_description')
+                product_image = serializer.validated_data.get('product_image')
+                price = serializer.validated_data.get('price')
+                quantity = serializer.validated_data.get('quantity')
+                off = serializer.validated_data.get('off')
+
+                _product = Products.objects.filter(id=id, merchant_id=merchant_id)
+                if _product.exists():
+                    product = _product[0]
+                    product.id = id
+                    product.product_name = product_name
+                    product.product_description = product_description
+                    product.product_image = product_image
+                    product.price = price
+                    product.quantity = quantity
+                    product.off = off
+                    
+                    if product_image:
+                        product.save(update_fields=['product_name', 'product_description', 'product_image', 'price', 'quantity', 'off'])
+
+                    else:
+                        product.save(update_fields=['product_name', 'product_description', 'price', 'quantity', 'off'])
+
+                    return Response(CreateProductSerializer(product).data, status=status.HTTP_204_NO_CONTENT)
+
+                else:
+                    return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+
+            else:
+                return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response({'Unauthorized Request': 'You are not allowed to Create Product'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'Unauthorized Request': 'You are not allowed to Update Product'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
+class GetProduct(APIView):
+    def get(self, request, pk, slug=None, format=None):
+        if slug and pk:
+            queryset = Products.objects.filter(id=pk, slug=slug)
+        
+        elif pk:
+            queryset = Products.objects.filter(id=pk)
+
+        if queryset.exists():
+            product = queryset[0]
+            return Response(CreateProductSerializer(product).data)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+class GetAllProducts(mixins.ListModelMixin,
+                    generics.GenericAPIView):
+        
+        queryset = Products.objects.all()
+        serializer_class = CreateProductSerializer
+
+        def get(self, request, *args, **kwargs):
+            return self.list(request, *args, **kwargs)
+    
 
 
 ##########################################        
 
+### Category
+class CategoryView(mixins.ListModelMixin,
+                    mixins.CreateModelMixin,
+                    mixins.DestroyModelMixin,
+                    mixins.UpdateModelMixin,
+                    generics.GenericAPIView):
+    
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+    
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+    
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+    
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+    
+#############
+
+### USER ###
+class CreateUser(APIView):
+    serializer_class = CreateUserSerializer
+
+    def get(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            username = request.session.get('email')
+            user = User.objects.filter(username=username)
+            if user.exists():
+                return Response(self.serializer_class(user[0]).data, status=status.HTTP_200_OK)
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+    def post(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            serializer = self.serializer_class(data=request.data)
+            username = request.session.get('email')
+            print(username)
+            
+            if serializer.is_valid():
+                check_for_user = User.objects.filter(username=username)
+                if not check_for_user.exists():
+                    user = User(username=username)
+                    user.save()
+
+                    return Response(status=status.HTTP_201_CREATED)
+
+                else:
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        else:
+            return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    def put(self, request, format=None):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            address = serializer.validated_data.get('address')
+            country = serializer.validated_data.get('country')
+            province = serializer.validated_data.get('province')
+            city = serializer.validated_data.get('city')
+            phone = serializer.validated_data.get('phone')
+            username = request.session.get('email')
+
+            user = User.objects.filter(username=username)
+            if user.exists():
+                user.address = address
+                user.country = country
+                user.city = city
+                user.province = province
+                user.phone = phone
+
+                user.save(update_fields=['address', 'country', 'province', 'city', 'phone'])
+                
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response({'Not Found': 'User Not Found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+###################
+
+### CREATE CART ###
+class CreateCart(APIView):
+    serializer_class = CreateCartSerializer
+
+    def get(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            user = request.session.get('email')
+            cart = UserCart.objects.filter(username=user)
+            if cart.exists():
+                return Response(GetCartSerializer(cart, many=True).data, status=status.HTTP_200_OK)
+
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+        else:
+            return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    def post(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            serializer = self.serializer_class(data=request.data)
+
+            if serializer.is_valid():
+                user = request.session.get('email')
+                product = serializer.validated_data.get('product')
+                quantity = serializer.validated_data.get('quantity')
+                
+                if quantity <= product.quantity:
+                    user_cart_id = UserCart.objects.filter(username=user, product=product)
+                    if not user_cart_id.exists():
+                        cart = UserCart(username=user, product=product, quantity=quantity)
+                        cart.save()
+
+                        user_cart = User.objects.filter(username=user)
+                        user_cart[0].cart.add(cart)
+                        return Response(GetCartSerializer(cart).data, status=status.HTTP_200_OK)
+                    
+                    else:
+                        user_cart_id[0].quantity += 1
+                        user_cart_id[0].save()
+
+                        user_cart = User.objects.filter(username=user)
+                        user_cart[0].cart.add(user_cart_id[0])
+
+                        return Response(GetCartSerializer(user_cart_id[0]).data, status=status.HTTP_204_NO_CONTENT)
+                
+                else:
+                    return Response({'out of range': 'The quantity that you want is out of range'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    def put(self, request, pk, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            serializer = self.serializer_class(data=request.data)
+
+            if serializer.is_valid():
+                user = request.session.get('email')
+                product = serializer.validated_data.get('product')
+                quantity = serializer.validated_data.get('quantity')
+
+                cart = UserCart.objects.filter(username=user, id=pk)
+                if cart.exists():
+                    cart.quantity = quantity
+                    if cart.quantity <= product.quantity:
+                        cart.save(update_fields=['quantity'])
+    
+                        return Response(GetCartSerializer(cart).data, status=status.HTTP_201_CREATED)
+    
+                    else:
+                        return Response({'out of range': 'The quantity that you want is out of range'}, status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+    def delete(self, request, pk, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            username = request.session.get('email')
+            cart_item = UserCart.objects.filter(id=pk, username=username)
+            if cart_item.exists():
+                cart_item.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            
+            else:
+                return Response({'Not Found': 'Item Not found in cart'},status=status.HTTP_404_NOT_FOUND)
+        
+        else:
+            return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+
+#####
 
 """ AUTHENTICATION SECTION """
 #####################################################

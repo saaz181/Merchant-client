@@ -1,7 +1,6 @@
-from django.db import models
 from django.db.models import fields
 from rest_framework import serializers
-from .models import Merchant, Products, User, UserProducts
+from .models import *
 
 
 class MerchantSerializer(serializers.ModelSerializer):
@@ -42,12 +41,33 @@ class UpdateMerchantSerializer(serializers.ModelSerializer):
         fields = ('merchant_id','merchant_logo',)
 
 
+
+class SubSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubSubCategory
+        fields = '__all__'
+
+class SubCategorySerializer(serializers.ModelSerializer):
+    sub_category = SubSubCategorySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SubCategory
+        fields = '__all__'
+
+class CategorySerializer(serializers.ModelSerializer):
+    sub_category = SubCategorySerializer(many=True, read_only=True)
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Products
         fields = '__all__'
 
 class CreateProductSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Products
         fields = (
@@ -59,7 +79,10 @@ class CreateProductSerializer(serializers.ModelSerializer):
             'quantity',
             'off',
             'visited_time',
+            'category',
             'purchased_time',
+            'slug',
+            'merchant_logo'
         )
 
 
@@ -85,4 +108,25 @@ class MainMerchantPageSerializer(serializers.ModelSerializer):
             'credit_card',
             'shaba_code'
         )
+
+
+class CreateCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserCart
+        fields = '__all__'
+    
+    
+class GetCartSerializer(serializers.ModelSerializer):
+    product = CreateProductSerializer(read_only=True) 
+
+    class Meta:
+        model = UserCart
+        fields = ('id', 'product', 'quantity', 'ordered')
+
+
+class CreateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+
 

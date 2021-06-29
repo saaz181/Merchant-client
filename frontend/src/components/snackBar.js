@@ -30,7 +30,7 @@ export default function CustomizedSnackbars(props) {
   return (
     <div className={classes.root}>
       <Snackbar open={open}
-                autoHideDuration={3000}
+                autoHideDuration={2000}
                 onClose={() => dispatch(close())}
                 anchorOrigin={{vertical, horizontal}}
                 key={vertical + horizontal}

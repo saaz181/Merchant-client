@@ -34,7 +34,7 @@ import { useDispatch} from 'react-redux';
 import { addToCart, openSnack } from '../actions';
 
 
-const useStyles = makeStyles({ 
+const useStyles = makeStyles((theme) => ({ 
     bullet: {
       display: 'inline-block',
       margin: '0 2px',
@@ -51,17 +51,29 @@ const useStyles = makeStyles({
     },
     media: {
         height: 0,
-        paddingTop: '56.25%', // 16:9
+        paddingTop: '56.25%',
+        objectFit: 'cover',
     },
-});
+    navigation: {
+        position: 'absolute',
+        marginLeft: 20
+        
+    },
+    card: {
+        minWidth: 227, 
+        marginRight: theme.spacing(1), 
+        marginLeft: theme.spacing(1),
+        
+    }
+}));
 
 const convert = (big_number) => {
     const values = {
         million: 1000000,
         billion: 1000000000
     }
-    if (big_number / values.million >= 1) return (big_number / values.million).toString().substr(0, 5) + ' M';
-    else if (big_number / values.billion >= 1) return (big_number / values.billion).toString().substr(0, 5) + ' B';
+    if (big_number / values.million >= 1) return (big_number / values.million).toString().substr(0, 4) + ' M';
+    else if (big_number / values.billion >= 1) return (big_number / values.billion).toString().substr(0, 4) + ' B';
     else return big_number;
 }
 
@@ -128,7 +140,7 @@ const CustomCard = (props) => {
 
     return (
         
-            <Card>
+            <Card className={classes.card}>
                 <CardHeader
                 avatar={
 
@@ -248,7 +260,8 @@ const CustomCard = (props) => {
         <CardActions>
         <BottomNavigation
         showLabels
-                    >
+        style={{flex: 1}}
+                >
                     <BottomNavigationAction label="views" icon={0} />
                     <BottomNavigationAction label="quantity" icon={quantity} />
                     <BottomNavigationAction onClick={() => {

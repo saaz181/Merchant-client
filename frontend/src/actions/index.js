@@ -1,17 +1,3 @@
-/*export const increment = (mul) => {
-    return {
-        type: 'INCREMENT',
-        payload: mul
-    };
-};
-
-export const decrement = () => {
-    return {
-        type: 'DECREMENT'
-    };
-};
-*/
-
 export const openSnack = () => {
     return {
         type: 'OPEN'
@@ -41,8 +27,46 @@ export const removeFromCartCount = () => {
     };
 };
 
+export const addToCartItems = (itemList) => {
+    return {
+        type: 'ADD_ITEM_TO_CART',
+        payload: itemList
+    }
+}
 
 
+export const editQuantity = (idx, num) => {
+    return {
+        type: 'EDIT_QUANTITY',
+        payload: {
+            idx: idx,
+            quantity: num
+        }
+    }
+}
+
+export const totalPrice = (cart) => {
+    return {
+        type: 'TOTAL_PRICE',
+        payload: cart
+    }
+}
+
+
+export const totalOff = (cart) => {
+    return {
+        type: 'TOTAL_OFF',
+        payload: cart
+
+    }
+}
+
+export const final = (cart) => {
+    return {
+        type: 'FINAL',
+        payload: cart
+    }
+}
 
 
 

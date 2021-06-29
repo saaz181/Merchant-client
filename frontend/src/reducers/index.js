@@ -1,23 +1,15 @@
 import { combineReducers } from "redux";
 import cartCountReducer from "./cart";
+import cartItemsReducer from "./cartItems";
 import openReducer from "./openSnack";
-
-
-// import counterReducer from "./counter";
-// import loggedReducer from "./isLogged";
-
-
-// const rootReducer = combineReducers({
-//     counter: counterReducer,
-//     isLogged: loggedReducer
-// })
-
-// export default rootReducer;
+import totalReducer from "./totalAmount";
 
 
 const rootReducer = combineReducers({
     open: openReducer,
     counter: cartCountReducer,
+    cart: cartItemsReducer,
+    calcs: totalReducer,
 })
 
 export default rootReducer;

@@ -28,8 +28,8 @@ import productPage from './productPage';
 import Content from './content';
 import Cart from './Cart';
 import CustomizedSnackbars from './snackBar';
-import {useDispatch} from 'react-redux';
-import { addToCartCount } from '../actions';
+import {useDispatch, useSelector} from 'react-redux';
+import { addToCartCount, addToCartItems } from '../actions';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -61,7 +61,8 @@ const itemList = [
             {
                 text: <Link to={{pathname: `merchant/${state.merchant_id}`}}
                             style={{textDecoration : 'none', color: 'inherit'}}>
-                                Merchant Page </Link>,
+                                Merchant Page 
+                        </Link>,
                 icon: <StoreIcon />,
                 onClick: null
             },
@@ -122,6 +123,23 @@ const itemList = [
         .then(response => setAuthenticated(false))
     }
 
+    
+    const addToCart = (idx) => {
+        axios.post('/api/create-cart', {
+            product: idx,
+            quantity: 1
+        })
+        .then(res => {
+            if (res.status == 200){
+                dispatch(addToCartCount(1));
+                dispatch(addToCartItems(
+                    [res.data]
+                ));
+            }
+        })
+        
+    }
+
     useEffect(() => {
         axios.get('/api/user-has-merchant')
         .then(response => {
@@ -169,22 +187,12 @@ const itemList = [
         axios.post('/api/create-user')
     } ,[])
 
-    const addToCart = (idx) => {
-        axios.post('/api/create-cart', {
-            product: idx,
-            quantity: 1
-        })
-        .then(res => {
-            if (res.status == 200)
-                dispatch(addToCartCount(1));
-        })
-        
-    }
 
     useEffect(() => {
         axios.get('/api/create-cart')
         .then(res => {
               dispatch(addToCartCount(res.data.length));
+              dispatch(addToCartItems(res.data));
         })
     }, [])
 
@@ -196,14 +204,14 @@ const itemList = [
                 <Header companyName={state.name} itemList={itemList} picture={state.picture}  cartLength={cartItem} />
             </Grid>
             <Grid item container>
-                <Grid item xs={12} sm={2} >
+                <Grid item xs={12} sm={1} >
                 {createMerchant ? 
                         null
                         :
                     <Button color='primary' to='/merchant' component={Link} disabled={!authenticated}>Merchant</Button>
                 }
                 </Grid>
-                <Grid item xs={12} sm={8} >
+                <Grid item xs={12} sm={10} >
                     <Content 
                             product={allProduct}
                             isMerchant={false}
@@ -211,7 +219,7 @@ const itemList = [
                             />
                 </Grid>
             </Grid>
-            <Grid item xs={0} sm={2}>
+            <Grid item xs={12} sm={1}>
                 <CustomizedSnackbars message="Added to cart" type="success" />  
             </Grid>
         </Grid>
@@ -243,3 +251,6 @@ const itemList = [
 
 
 
+/*        
+    }
+*/

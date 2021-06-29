@@ -27,7 +27,7 @@ import TreeItem from '@material-ui/lab/TreeItem';
 import TreeView from '@material-ui/lab/TreeView';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-
+import CategorySelect from './SelectCategory';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -233,10 +233,13 @@ export default function makeProduct (props) {
     
     useEffect(() => {
         axios.get('/api/category')
-        .then(response => setCategory({
+        .then(response => {
+        setCategory({
             ...category,
             category: response.data
-        }))
+        })
+        console.log(response.data);
+        })
     }, [])
 
 
@@ -249,17 +252,17 @@ export default function makeProduct (props) {
             defaultExpandIcon={<ChevronRightIcon />}
             >
             {category.category && category.category.map((item) => {
-                const {id, title, description, sub_category} = item;
+                const {title, sub_category} = item;
                 return (
                     <TreeItem nodeId={x++} label={title}>
                         {sub_category && sub_category.map(item1 => {
-                            const {id, title, description, sub_category} = item1;
+                            const {title, sub_sub_category} = item1;
                             return (
-                                <TreeItem nodeId={id} label={title} >
-                                    {sub_category && sub_category.map(item2 => {
-                                        const {id, title, description} = item2;
+                                <TreeItem nodeId={x++} label={title} >
+                                    {sub_sub_category && sub_sub_category.map(item2 => {
+                                        const {title} = item2;
                                         return (
-                                            <TreeItem nodeId={id} label={title} />
+                                            <TreeItem nodeId={x++} label={title} />
                                         );
                                     })}
                                 </TreeItem>
@@ -541,7 +544,7 @@ export default function makeProduct (props) {
                 </Button>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    {flatData()}
+                
                 </Grid>
             </Grid>
             {renderAlert()}

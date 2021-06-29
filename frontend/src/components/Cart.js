@@ -1,354 +1,155 @@
 import React, {useEffect} from 'react';
-import PropTypes from 'prop-types';
-import clsx from 'clsx';
-import { lighten, makeStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
-import TablePagination from '@material-ui/core/TablePagination';
 import TableRow from '@material-ui/core/TableRow';
-import TableSortLabel from '@material-ui/core/TableSortLabel';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
 import Paper from '@material-ui/core/Paper';
-import Checkbox from '@material-ui/core/Checkbox';
-import IconButton from '@material-ui/core/IconButton';
-import Tooltip from '@material-ui/core/Tooltip';
+import {useSelector, useDispatch} from 'react-redux';
 import DeleteIcon from '@material-ui/icons/Delete';
+import { IconButton, Snackbar } from '@material-ui/core';
 import axios from 'axios';
-import CustomizedSnackbars from './snackBar';
-import {useDispatch} from 'react-redux';
-import { openSnack, removeFromCart } from '../actions';
+import {editQuantity, openSnack, removeFromCartCount, totalOff, totalPrice, final} from '../actions';
+import TextField from '@material-ui/core/TextField';
+import {countryData} from './countries';
 
-
-function createData(id, name, quantity,  price, off) {
-  return { id, name, quantity, price, off };
-}
-
-const rows = [];
-
-
-const headCells = [
-  { id: 'name', numeric: false, disablePadding: true, label: 'Cart Items' },
-  { id: 'quantity', numeric: true, disablePadding: false, label: 'Quantity' },
-  { id: 'price', numeric: true, disablePadding: false, label: 'Price' },
-  { id: 'off', numeric: true, disablePadding: false, label: 'discount' },
-
-];
-
-function EnhancedTableHead(props) {
-  const { classes, onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
-  const createSortHandler = (property) => (event) => {
-    onRequestSort(event, property);
-  };
-
-  return (
-    <TableHead>
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{ 'aria-label': 'select all desserts' }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
-            padding={headCell.disablePadding ? 'none' : 'default'}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <span className={classes.visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </span>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
-
-EnhancedTableHead.propTypes = {
-  classes: PropTypes.object.isRequired,
-  numSelected: PropTypes.number.isRequired,
-  onRequestSort: PropTypes.func.isRequired,
-  onSelectAllClick: PropTypes.func.isRequired,
-  order: PropTypes.oneOf(['asc', 'desc']).isRequired,
-  orderBy: PropTypes.string.isRequired,
-  rowCount: PropTypes.number.isRequired,
-};
-
-const useToolbarStyles = makeStyles((theme) => ({
-  root: {
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(1),
-  },
-  highlight:
-    theme.palette.type === 'light'
-      ? {
-          color: theme.palette.secondary.main,
-          backgroundColor: lighten(theme.palette.secondary.light, 0.85),
-        }
-      : {
-          color: theme.palette.text.primary,
-          backgroundColor: theme.palette.secondary.dark,
-        },
-  title: {
-    flex: '1 1 100%',
-  },
-}));
-
-const EnhancedTableToolbar = (props) => {
-  const classes = useToolbarStyles();
-  const { numSelected, deleteCart } = props;
-  const counts = numSelected.length;
-
-  
-  return (
-    <Toolbar
-      className={clsx(classes.root, {
-        [classes.highlight]: counts > 0,
-      })}
-    >
-      {counts > 0 ? (
-        <Typography className={classes.title} color="inherit" variant="subtitle1" component="div">
-          {counts} selected
-        </Typography>
-      ) : (
-        <Typography className={classes.title} variant="h6" id="tableTitle" component="div">
-          Cart
-        </Typography>
-      )}
-
-      {counts > 0 ? (
-        <Tooltip title="Delete">
-          <IconButton aria-label="delete" onClick={() => rows.map((item, index ) => {
-              if (item.name == numSelected[0]) {
-                deleteCart(item.id);
-              }
-          }) }>
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Typography variant='body1' style={{width: 300}}>
-            Total: 0
-        </Typography>
-      )}
-    </Toolbar>
-  );
-};
-
-EnhancedTableToolbar.propTypes = {
-  numSelected: PropTypes.number.isRequired,
-};
-
-const useStyles = makeStyles((theme) => ({
-  root: {
-    width: '100%',
-  },
-  paper: {
-    width: '100%',
-    marginBottom: theme.spacing(2),
-  },
+const useStyles = makeStyles({
   table: {
-    minWidth: 750,
+    minWidth: 650,
   },
-  visuallyHidden: {
-    border: 0,
-    clip: 'rect(0 0 0 0)',
-    height: 1,
-    margin: -1,
-    overflow: 'hidden',
-    padding: 0,
-    position: 'absolute',
-    top: 20,
-    width: 1,
-  },
-}));
+});
 
-const accessData = (data) => {
-    if (data){
-        for (const {id, product, quantity} of data) {
-            rows.push(createData(id, product.product_name, quantity, product.price, product.off))
-        }
-    }
+const addToTableRow = (data) => {
+  if (data) {
+    var result = Object.keys(data).map((key) => [data[key]]);
+    return result;
+  }   
+}
+
+const convert = (big_number) => {
+  const values = {
+      million: 1000000,
+      billion: 1000000000
+  }
+  if (big_number / values.million >= 1) return (big_number / values.million).toString().substr(0, 5) + ' M';
+  else if (big_number / values.billion >= 1) return (big_number / values.billion).toString().substr(0, 5) + ' B';
+  else return big_number;
 }
 
 export default function Cart(props) {
-  const { header } = props;
   const classes = useStyles();
-  const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState('calories');
-  const [selected, setSelected] = React.useState([]);
-  const [page, setPage] = React.useState(0);
-  const [dense, setDense] = React.useState(false);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const dispatch = useDispatch();
+  const {header} = props;
+  const cart = useSelector(state => state.cart);
   const [msg, setMsg] = React.useState({
     message: '',
-    type: '',
+    type: ''
   })
+  console.log(window.location.pathname == '/cart')
+  const dispatch = useDispatch();
+  const calcs = useSelector(state => state.calcs)
 
-    const deleteProduct = async (id) => {
-        axios.delete(`/api/create-cart/${id}`)
-        .then(response => {
-          if (response.status == 204) {
-            dispatch(openSnack());
-            setMsg({message: 'Item Deleted successfully', type: 'success'});
-          } else {
-            dispatch(openSnack())
-            setMsg({message: 'Issue with Deleting Item', type: 'error'})
-
-          }
-          ;
-        })
-        // await window.location.reload();
-        setSelected([]);
+  const deleteProduct = async (id) => {
+    axios.delete(`/api/create-cart/${id}`)
+    .then(response => {
+      if (response.status == 204) {
+        dispatch(openSnack());
+        setMsg({message: 'Item Deleted successfully', type: 'success'});
+        dispatch(removeFromCartCount());
         
-    }
-    
-    useEffect(() => {
-        axios.get('/api/create-cart')
-        .then(res => {
-          accessData(res.data)
-          console.log(res.data.length)
-        })
-    }, [])
+      } else {
+        dispatch(openSnack())
+        setMsg({message: 'Issue with Deleting Item', type: 'error'})
 
-const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.name);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1),
-      );
-    }
-
-    setSelected(newSelected);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const isSelected = (name) => selected.indexOf(name) !== -1;
-
-  const emptyRows = rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
+      }
+      ;
+    })
+    await window.location.reload();
+  }
   
-  return (
-    <div className={classes.root}>
-        {header}
-      <Paper className={classes.paper}>
-        <EnhancedTableToolbar numSelected={selected} deleteCart={deleteProduct} />
-        <TableContainer>
-          <Table
-            className={classes.table}
-            aria-labelledby="tableTitle"
-            size='medium'
-            aria-label="enhanced table"
-          >
-            <EnhancedTableHead
-              classes={classes}
-              numSelected={selected.length}
-              order={order}
-              orderBy={orderBy}
-              onSelectAllClick={handleSelectAllClick}
-              onRequestSort={handleRequestSort}
-              rowCount={rows.length}
-            />
-            <TableBody>
-              {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row, index) => {
-                  const isItemSelected = isSelected(row.name);
-                  const labelId = `enhanced-table-checkbox-${index}`;
 
-                  return (
-                    <TableRow
-                      hover
-                      onClick={(event) => handleClick(event, row.name)}
-                      role="checkbox"
-                      aria-checked={isItemSelected}
-                      tabIndex={-1}
-                      key={row.id}
-                      selected={isItemSelected}
-                    >
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          checked={isItemSelected}
-                          inputProps={{ 'aria-labelledby': labelId }}
+  const updateQuantity = (idx, event) => {
+    const formData = new FormData();
+    let quantity = event.target.value;
+    formData.append('quantity', quantity);
+  
+    axios.put(`/api/create-cart/${idx}`, formData)
+    dispatch(editQuantity(idx, parseInt(quantity)));
+    dispatch(final(cart));
+    dispatch(totalOff(cart));
+    dispatch(totalPrice(cart));
+
+  }
+  
+  useEffect(() => {
+      dispatch(final(cart));
+      dispatch(totalOff(cart));
+      dispatch(totalPrice(cart));
+    }, [cart])
+
+    return (
+    <TableContainer component={Paper} style={{overflowY: 'scroll', overflowX: 'scroll', height: '100vh'}}>
+      {header}
+      <Table className={classes.table} aria-label="caption table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Name</TableCell>
+            <TableCell align="right">Quantity</TableCell>
+            <TableCell rowSpan={1} align="right">Price (ريال)</TableCell>
+            <TableCell align="right">Off Price (ريال)</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {cart && addToTableRow(cart).map((row) => (
+            <TableRow key={row[0].id}>
+              <TableCell component="th" scope="row">
+                {row[0].product.product_name}
+              </TableCell>
+              <TableCell align="right">
+                      <TextField
+                          id="standard-number"
+                          type="number"
+                          InputLabelProps={{
+                            shrink: true,
+                          }}
+                          InputProps={{
+                            inputProps: { 
+                                max: row[0].product.quantity, min: 1
+                            }
+                          }}
+                          onChange={event => updateQuantity(row[0].id, event, row[0].quantity)}
+                          defaultValue={row[0].quantity}
+                          size='small'
                         />
-                      </TableCell>
-                      <TableCell component="th" id={labelId} scope="row" padding="none">
-                        {row.name}
-                      </TableCell>
-                      <TableCell align="right">{row.quantity}</TableCell>
-                      <TableCell align="right">{row.price}</TableCell>
-                      <TableCell align="right">{row.off}</TableCell>
-                      <TableCell align="right"></TableCell>
-                    </TableRow>
-                  );
-                })}
-              {emptyRows > 0 && (
-                <TableRow style={{ height: (dense ? 33 : 53) * emptyRows }}>
-                  <TableCell colSpan={6} />
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5]}
-          component="div"
-          count={rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onChangePage={handleChangePage}
-          onChangeRowsPerPage={handleChangeRowsPerPage}
-        />
-        <CustomizedSnackbars message={msg.message} type={msg.type} />
-      </Paper>
-    </div>
+                </TableCell>
+              <TableCell align="right">{convert(row[0].product.price)}</TableCell>
+              <TableCell align="right">{row[0].product.off ? convert(row[0].product.off) : 0}</TableCell>
+              <TableCell align="right">
+                <IconButton size='small' onClick={() => deleteProduct(row[0].id)}>
+                  <DeleteIcon color='secondary' />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+
+        <TableRow>
+            <TableCell rowSpan={3} />
+            <TableCell colSpan={2}></TableCell>
+            <TableCell align="left"></TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Total</TableCell>
+            <TableCell align="right">{calcs.total.toLocaleString()}</TableCell>
+            <TableCell align="right">{calcs.off.toLocaleString()}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell >Final Payment</TableCell>
+            <TableCell align="right">{calcs.final.toLocaleString()}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <Snackbar message={msg.message} type={msg.type} />
+    </TableContainer>
   );
 }

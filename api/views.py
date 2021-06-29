@@ -377,7 +377,7 @@ class CategoryView(mixins.ListModelMixin,
                     mixins.UpdateModelMixin,
                     generics.GenericAPIView):
     
-    queryset = Category.objects.all()
+    queryset = Categories.objects.all()
     serializer_class = CategorySerializer
 
     def get(self, request, *args, **kwargs):
@@ -414,7 +414,6 @@ class CreateUser(APIView):
         if is_authenticated_google(self.request.session.session_key):
             serializer = self.serializer_class(data=request.data)
             username = request.session.get('email')
-            print(username)
             
             if serializer.is_valid():
                 check_for_user = User.objects.filter(username=username)
@@ -432,41 +431,20 @@ class CreateUser(APIView):
         
         else:
             return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    def put(self, request, format=None):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            address = serializer.validated_data.get('address')
-            country = serializer.validated_data.get('country')
-            province = serializer.validated_data.get('province')
-            city = serializer.validated_data.get('city')
-            phone = serializer.validated_data.get('phone')
-            username = request.session.get('email')
-
-            user = User.objects.filter(username=username)
-            if user.exists():
-                user.address = address
-                user.country = country
-                user.city = city
-                user.province = province
-                user.phone = phone
-
-                user.save(update_fields=['address', 'country', 'province', 'city', 'phone'])
-                
-                return Response(status=status.HTTP_200_OK)
-            else:
-                return Response({'Not Found': 'User Not Found'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 ###################
 
 ### CREATE CART ###
 class CreateCart(APIView):
     serializer_class = CreateCartSerializer
 
-    def get(self, request, format=None):
+    def get(self, request, pk=None, format=None):
         if is_authenticated_google(self.request.session.session_key):
             user = request.session.get('email')
+            if pk:
+                cart = UserCart.objects.filter(username=user, id=pk)
+                if cart.exists():
+                    return Response(GetCartSerializer(cart[0]).data, status=status.HTTP_200_OK)
+            
             cart = UserCart.objects.filter(username=user)
             if cart.exists():
                 return Response(GetCartSerializer(cart, many=True).data, status=status.HTTP_200_OK)
@@ -519,16 +497,14 @@ class CreateCart(APIView):
 
             if serializer.is_valid():
                 user = request.session.get('email')
-                product = serializer.validated_data.get('product')
                 quantity = serializer.validated_data.get('quantity')
 
                 cart = UserCart.objects.filter(username=user, id=pk)
                 if cart.exists():
-                    cart.quantity = quantity
-                    if cart.quantity <= product.quantity:
-                        cart.save(update_fields=['quantity'])
+                    if quantity <= cart[0].product.quantity:
+                        cart.update(quantity=quantity)
     
-                        return Response(GetCartSerializer(cart).data, status=status.HTTP_201_CREATED)
+                        return Response(GetCartSerializer(cart[0]).data, status=status.HTTP_201_CREATED)
     
                     else:
                         return Response({'out of range': 'The quantity that you want is out of range'}, status=status.HTTP_400_BAD_REQUEST)
@@ -555,6 +531,85 @@ class CreateCart(APIView):
             return Response({'Unauthorizred': "You are not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
 #####
+
+### ORDER INFO
+
+class orderInfo(APIView):
+    serializer_class = CreateUserAddressSerializer
+
+    def get(self, request, user=None, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            if user:
+                info = UserAddress.objects.filter(username=user)
+
+                if info.exists():
+                    return Response(self.serializer_class(info, many=True).data, status=status.HTTP_200_OK)
+            
+            ## for dev purpose
+            ## WARNING: This 'else' statemant should be removed in production     ##
+            else:
+                all_info = UserAddress.objects.all()
+                return Response(CreateUserAddressSerializer(all_info, many=True).data, status=status.HTTP_200_OK)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    def post(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            serializer = self.serializer_class(data=request.data)
+
+            if serializer.is_valid():
+                user = request.session.get('email')
+                first_name = serializer.validated_data.get('first_name')
+                last_name = serializer.validated_data.get('last_name')
+                zip_code = serializer.validated_data.get('zip_code')
+                phone = serializer.validated_data.get('phone')
+                country = serializer.validated_data.get('country')
+                city = serializer.validated_data.get('city')
+                credit_cart = serializer.validated_data.get('credit_cart')
+                address_type = serializer.validated_data.get('address_type')
+                default = serializer.validated_data.get('default')
+                
+                user_address = UserAddress(
+                    username=user, 
+                    first_name=first_name,
+                    last_name=last_name,
+                    zip_code=zip_code,
+                    phone=phone,
+                    country=country,
+                    city=city,
+                    credit_cart=credit_cart,
+                    address_type=address_type,
+                    default=default
+                    )
+                user_address.save()
+
+                if address_type == 'B':
+                    check_user = User.objects.filter(username=user, billing_address=user_address)
+                    if check_user.exists():
+                        return Response({'Existence': 'shipping address Already Exists'}, status=status.HTTP_204_NO_CONTENT)
+                    
+                    else:
+                        user = User.objects.filter(username=user)
+                        if user.exists():
+                            user.update(billing_address=user_address)
+                            return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
+
+                
+                else:
+                    check_user = User.objects.filter(username=user, shipping_address=user_address)
+                    if check_user.exists():
+                        return Response({'Existence': 'shipping address Already Exists'}, status=status.HTTP_204_NO_CONTENT)
+                    
+                    else:
+                        user = User.objects.filter(username=user)
+                        if user.exists():
+                            user.update(shipping_address=user_address)
+                            return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
+                        
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+##################
+
 
 """ AUTHENTICATION SECTION """
 #####################################################

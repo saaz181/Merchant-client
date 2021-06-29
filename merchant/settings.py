@@ -30,8 +30,7 @@ INSTALLED_APPS = [
     'frontend.apps.FrontendConfig',
     'rest_framework',
     'validate_email',
-    'django_filters',
-    'mptt',
+    'django_countries',
 ]
 
 MIDDLEWARE = [

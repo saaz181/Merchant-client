@@ -3,10 +3,16 @@ from django.db import models
 import string
 import random
 from django.core.validators import MinValueValidator
+from django.db.models.fields import BooleanField
 from django.utils.text import slugify
 from django.db.models.signals import (post_save, pre_save)
 from django.dispatch import receiver
 
+
+ADDRESS_CHOICES = (
+    ('B', 'Billing'),
+    ('S', 'Shipping'),
+)
 
 def generate_merchant_id():
     length = 12
@@ -42,7 +48,7 @@ class Merchant(models.Model):
     credit_card = models.CharField(max_length=16, unique=True)
     shaba_code = models.CharField(max_length=50, unique=True)
     unique_email = models.EmailField(blank=True, null=True, default='example@example.com')
-    categories = models.ManyToManyField('Category', blank=True, null=True)
+    earned = models.FloatField(default=0, blank=True, null=True)
 
     def __str__(self) -> str:
         return self.merchant_id
@@ -52,10 +58,10 @@ class Merchant(models.Model):
 
 
 # Category of each product
-class Category(models.Model):
+class Categories(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
-    sub_category = models.ManyToManyField('self', blank=True, null=True, related_name='children')
-    sub_sub_category = models.ForeignKey('self', blank=True, null=True, related_name='children1', on_delete=models.CASCADE)
+    sub_category = models.ManyToManyField('SubCategory', blank=True, null=True)
     
     def __str__(self) -> str:
         return self.title
@@ -63,10 +69,10 @@ class Category(models.Model):
     class Meta:
         verbose_name_plural = 'Categories'
 
+
 class SubCategory(models.Model):
     title = models.CharField(max_length=100)
-    description = models.CharField(max_length=100, blank=True, null=True)
-    # sub_category = models.ManyToManyField('SubSubCategory', blank=True, null=True)
+    sub_sub_category = models.ManyToManyField('SubSubCategory', blank=True, null=True)
 
 
     def __str__(self) -> str:
@@ -77,8 +83,7 @@ class SubCategory(models.Model):
 
 class SubSubCategory(models.Model):
     title = models.CharField(max_length=100)
-    description = models.CharField(max_length=100, blank=True, null=True)
-
+    
     def __str__(self) -> str:
         return self.title
 
@@ -95,7 +100,9 @@ class Products(models.Model):
     off = models.FloatField(blank=True, null=True, default=0)
     visited_time = models.IntegerField(blank=True, null=True)
     purchased_time = models.IntegerField(blank=True, null=True)
-    category = models.ForeignKey(Category, blank=True, null=True, on_delete=models.SET_NULL)
+    category = models.ManyToManyField(Categories, blank=True, null=True)
+    sub_category = models.ManyToManyField(SubCategory, blank=True, null=True)
+    sub_sub_category = models.ManyToManyField(SubSubCategory, blank=True, null=True)
     slug = models.SlugField(max_length=200, blank=True, null=True)
     merchant_logo = models.ImageField(blank=True, null=True)
 
@@ -131,7 +138,21 @@ class UserCart(models.Model):
     ordered = models.BooleanField(default=False)
 
     def __str__(self) -> str:
-        return f'username: {self.username} | {self.product} - {self.quantity}' 
+        return f'username: {self.username} | Product: {self.product} - Quantity: {self.quantity}' 
+
+    def total_product_price(self):
+        return self.quantity * self.product.price
+
+    def total_product_off_price(self):
+        return self.quantity * self.product.off
+    
+    def profit_from_this_buy(self):
+        return self.total_product_price() - self.total_product_off_price()
+
+    def payment_price(self):
+        if self.product.off != 0:
+            return self.total_product_off_price()
+        return self.total_product_price()
 
     class Meta:
         verbose_name_plural = 'User Cart'
@@ -140,14 +161,38 @@ class User(models.Model):
     username = models.CharField(max_length=50, unique=True, blank=True, null=True)
     cart = models.ManyToManyField(UserCart, blank=True, null=True)    
     is_merchant = models.BooleanField(default=False)
-    address = models.CharField(max_length=255, blank=True, null=True)
-    country = models.CharField(max_length=20, blank=True, null=True)
-    province = models.CharField(max_length=50, blank=True, null=True)
-    city = models.CharField(max_length=50, blank=True, null=True)
-    phone = models.CharField(max_length=50, blank=True, null=True)
+    shipping_address = models.ForeignKey('UserAddress', related_name='shipping_address', blank=True, null=True, on_delete=models.SET_NULL)
+    billing_address = models.ForeignKey('UserAddress', related_name='billing_address', blank=True, null=True, on_delete=models.SET_NULL)
+    is_delivered = models,BooleanField(default=False)
+    is_received = models.BooleanField(default=False)
+    date_ordered = models.DateTimeField(blank=True, null=True)
+    date_received = models.DateTimeField(blank=True, null=True)
 
     def __str__(self) -> str:
         return self.username
+
+    def get_total(self):
+        total = 0
+        for product in self.cart.all():
+            total += product.payment_price()
+        
+        return total
+
+class UserAddress(models.Model):
+    username = models.CharField(max_length=50, blank=True, null=True)
+    first_name = models.CharField(max_length=200, blank=True, null=True)
+    last_name = models.CharField(max_length=200, blank=True, null=True)
+    zip_code = models.CharField(max_length=30, blank=True, null=True)
+    phone = models.CharField(max_length=30, blank=True, null=True)
+    country = models.CharField(max_length=50, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    credit_cart = models.CharField(max_length=50, blank=True, null=True)
+    address_type = models.CharField(max_length=1, choices=ADDRESS_CHOICES)
+    default = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.username
+
 
 class GoogleToken(models.Model):
     user = models.CharField(max_length=50, unique=True)

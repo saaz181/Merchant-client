@@ -18,6 +18,7 @@ import {
     ListItemText,
     Avatar,
     Fab,
+    Button,
 } 
 from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
@@ -132,11 +133,19 @@ export default function Header(props) {
                 </Fab>
             </Link>
             :
-            <IconButton>
-                <Link to={{pathname: '/cart'}} >
-                  <CustomizedBadges />
-                </Link>    
-            </IconButton>
+            <div>
+            {window.location.pathname != '/cart' ?
+              <IconButton>
+                  <Link to={{pathname: '/cart'}} >
+                    <CustomizedBadges />
+                  </Link>    
+              </IconButton>
+              :
+              <Button size='small' variant='contained' color='secondary'>
+                  Buy
+              </Button>
+          }
+          </div>
             
             }
         </Toolbar>

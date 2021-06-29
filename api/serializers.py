@@ -57,7 +57,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     sub_category = SubCategorySerializer(many=True, read_only=True)
     class Meta:
-        model = Category
+        model = Categories
         fields = '__all__'
 
 
@@ -129,4 +129,26 @@ class CreateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = '__all__'
 
+
+
+class CreateUserAddressSerializer(serializers.ModelSerializer):
+    ADDRESS_CHOICES = (
+    ('B', 'Billing'),
+    ('S', 'Shipping'),
+    )
+    address_type = serializers.ChoiceField(choices=ADDRESS_CHOICES)
+    
+    class Meta:
+        model = UserAddress
+        fields = (
+            'first_name',
+            'last_name',
+            'zip_code',
+            'phone',
+            'country',
+            'city',
+            'credit_cart',
+            'address_type',
+            'default'
+        )
 

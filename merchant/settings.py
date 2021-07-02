@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api.apps.ApiConfig', 
     'frontend.apps.FrontendConfig',
+    'IDpay.apps.IdpayConfig',
     'rest_framework',
     'validate_email',
     'django_countries',

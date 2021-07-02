@@ -1,4 +1,5 @@
 from django.urls import path
+from requests.api import patch
 from .views import index
 
 app_name = 'frontend'
@@ -14,5 +15,8 @@ urlpatterns = [
     path('product/<int:pk>', index),
     path('product/<int:pk>/<slug:slug>', index),
     path('cart', index),
+    path('order', index),
+    path('error', index),
+    path('checkout', index),
     
 ]

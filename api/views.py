@@ -537,19 +537,16 @@ class CreateCart(APIView):
 class orderInfo(APIView):
     serializer_class = CreateUserAddressSerializer
 
-    def get(self, request, user=None, format=None):
+    def get(self, request, format=None):
         if is_authenticated_google(self.request.session.session_key):
-            if user:
-                info = UserAddress.objects.filter(username=user)
+            user = request.session.get('email')
+            info = UserAddress.objects.filter(username=user)
 
-                if info.exists():
-                    return Response(self.serializer_class(info, many=True).data, status=status.HTTP_200_OK)
+            if info.exists():
+                return Response(self.serializer_class(info, many=True).data, status=status.HTTP_200_OK)
             
-            ## for dev purpose
-            ## WARNING: This 'else' statemant should be removed in production     ##
             else:
-                all_info = UserAddress.objects.all()
-                return Response(CreateUserAddressSerializer(all_info, many=True).data, status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
@@ -564,9 +561,10 @@ class orderInfo(APIView):
                 zip_code = serializer.validated_data.get('zip_code')
                 phone = serializer.validated_data.get('phone')
                 country = serializer.validated_data.get('country')
+                state = serializer.validated_data.get('state')
                 city = serializer.validated_data.get('city')
+                address = serializer.validated_data.get('address')
                 credit_cart = serializer.validated_data.get('credit_cart')
-                address_type = serializer.validated_data.get('address_type')
                 default = serializer.validated_data.get('default')
                 
                 user_address = UserAddress(
@@ -576,36 +574,25 @@ class orderInfo(APIView):
                     zip_code=zip_code,
                     phone=phone,
                     country=country,
+                    state=state,
                     city=city,
+                    address=address,
                     credit_cart=credit_cart,
-                    address_type=address_type,
                     default=default
                     )
-                user_address.save()
-
-                if address_type == 'B':
-                    check_user = User.objects.filter(username=user, billing_address=user_address)
-                    if check_user.exists():
-                        return Response({'Existence': 'shipping address Already Exists'}, status=status.HTTP_204_NO_CONTENT)
-                    
-                    else:
-                        user = User.objects.filter(username=user)
-                        if user.exists():
-                            user.update(billing_address=user_address)
-                            return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
 
                 
-                else:
-                    check_user = User.objects.filter(username=user, shipping_address=user_address)
-                    if check_user.exists():
-                        return Response({'Existence': 'shipping address Already Exists'}, status=status.HTTP_204_NO_CONTENT)
+                check_user = UserAddress.objects.filter(username=user, address=address, first_name=first_name, last_name=last_name)
+                if check_user.exists():
+                    return Response({'Existence': 'address Already Exists'}, status=status.HTTP_204_NO_CONTENT)
                     
-                    else:
-                        user = User.objects.filter(username=user)
-                        if user.exists():
-                            user.update(shipping_address=user_address)
-                            return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
-                        
+                else:
+                    user_address.save()
+                    user = User.objects.filter(username=user)
+                    if user.exists():
+                        user.update(shipping_address=user_address)
+                        return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
+        
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 ##################

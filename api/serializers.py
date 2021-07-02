@@ -132,12 +132,6 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 
 class CreateUserAddressSerializer(serializers.ModelSerializer):
-    ADDRESS_CHOICES = (
-    ('B', 'Billing'),
-    ('S', 'Shipping'),
-    )
-    address_type = serializers.ChoiceField(choices=ADDRESS_CHOICES)
-    
     class Meta:
         model = UserAddress
         fields = (
@@ -146,9 +140,10 @@ class CreateUserAddressSerializer(serializers.ModelSerializer):
             'zip_code',
             'phone',
             'country',
+            'state',
             'city',
+            'address',
             'credit_cart',
-            'address_type',
             'default'
         )
 

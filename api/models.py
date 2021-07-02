@@ -9,11 +9,6 @@ from django.db.models.signals import (post_save, pre_save)
 from django.dispatch import receiver
 
 
-ADDRESS_CHOICES = (
-    ('B', 'Billing'),
-    ('S', 'Shipping'),
-)
-
 def generate_merchant_id():
     length = 12
     main_string = string.ascii_lowercase + string.ascii_uppercase + string.digits
@@ -162,10 +157,8 @@ class User(models.Model):
     cart = models.ManyToManyField(UserCart, blank=True, null=True)    
     is_merchant = models.BooleanField(default=False)
     shipping_address = models.ForeignKey('UserAddress', related_name='shipping_address', blank=True, null=True, on_delete=models.SET_NULL)
-    billing_address = models.ForeignKey('UserAddress', related_name='billing_address', blank=True, null=True, on_delete=models.SET_NULL)
     is_delivered = models,BooleanField(default=False)
     is_received = models.BooleanField(default=False)
-    date_ordered = models.DateTimeField(blank=True, null=True)
     date_received = models.DateTimeField(blank=True, null=True)
 
     def __str__(self) -> str:
@@ -185,14 +178,18 @@ class UserAddress(models.Model):
     zip_code = models.CharField(max_length=30, blank=True, null=True)
     phone = models.CharField(max_length=30, blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
     credit_cart = models.CharField(max_length=50, blank=True, null=True)
-    address_type = models.CharField(max_length=1, choices=ADDRESS_CHOICES)
+    date_ordered = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     default = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.username
 
+    class Meta:
+        get_latest_by = ['address']
 
 class GoogleToken(models.Model):
     user = models.CharField(max_length=50, unique=True)

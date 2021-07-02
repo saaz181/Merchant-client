@@ -24,6 +24,7 @@ from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import { Link } from 'react-router-dom';
 import CustomizedBadges from './shopBadge';
+import {useSelector} from 'react-redux';
 
 const drawerWidth = 240;
 const useStyles = makeStyles((theme) => ({
@@ -87,9 +88,10 @@ export default function Header(props) {
     const classes = useStyles();
     const theme = useTheme();
     const [open, setOpen] = React.useState(false);
-    const {companyName, itemList, picture, merchantId , cartLength} = props;
+    const {companyName, itemList, picture, merchantId}  = props;
+    const isAuthenticated = useSelector(state => state.isAuthenticated);
 
-  const handleDrawerOpen = () => {
+    const handleDrawerOpen = () => {
     setOpen(true);
   };
 
@@ -134,17 +136,27 @@ export default function Header(props) {
             </Link>
             :
             <div>
-            {window.location.pathname != '/cart' ?
-              <IconButton>
-                  <Link to={{pathname: '/cart'}} >
-                    <CustomizedBadges />
-                  </Link>    
-              </IconButton>
-              :
-              <Button size='small' variant='contained' color='secondary'>
-                  Buy
-              </Button>
-          }
+              {isAuthenticated ?
+               <div>
+               {window.location.pathname != '/cart' ?
+                 <IconButton>
+                     <Link to={{pathname: '/cart'}} >
+                       <CustomizedBadges />
+                     </Link>    
+                 </IconButton>
+                 :
+                 
+                 <Link to={{pathname: '/order'}}>
+                   <Button size='small' variant='contained' color='secondary'>
+                       Buy
+                   </Button>
+                 </Link>
+             }
+             </div>
+             :
+             null 
+            }
+              
           </div>
             
             }

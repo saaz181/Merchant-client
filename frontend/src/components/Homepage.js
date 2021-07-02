@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import { 
     BrowserRouter as Router, 
     Switch, 
@@ -7,20 +8,19 @@ import {
 } from "react-router-dom";
 import { Grid, Button } from "@material-ui/core";
 import HorizontalLabelPositionBelowStepper from './CreateMerchant';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
 import VisibilityIcon from '@material-ui/icons/Visibility';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import StorageIcon from '@material-ui/icons/Storage';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import axios from 'axios';
 import StoreIcon from '@material-ui/icons/Store';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+import VpnKeyIcon from '@material-ui/icons/VpnKey';
+import axios from 'axios';
 import makeProduct from './makeProduct';
 import AccountInfo from './AccountInfo';
 import RecipeReviewCard from './new';
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import VpnKeyIcon from '@material-ui/icons/VpnKey';
 import Header from './Header';
 import UserPage from './UserPage';
 import MainMerchant from './MainMerchant';
@@ -29,8 +29,10 @@ import Content from './content';
 import Cart from './Cart';
 import CustomizedSnackbars from './snackBar';
 import {useDispatch, useSelector} from 'react-redux';
-import { addToCartCount, addToCartItems } from '../actions';
-
+import { addToCartCount, addToCartItems, authenticate } from '../actions';
+import Orders from './Orders';
+import errorPage from './404Page';
+import Checkout from './checkout/index';
 
 const useStyles = makeStyles((theme) => ({
     scroll: {
@@ -55,7 +57,7 @@ export default function Homepage (props) {
     });
     const [createMerchant, setCreateMerchant] = useState(true);
     const [allProduct, setAllProduct] = useState([]);
-    const [cartItem, setCartItem] = useState([]);
+    const isAuthenticated = useSelector(state => state.isAuthenticated)
 
 const itemList = [
             {
@@ -119,8 +121,11 @@ const itemList = [
     }
 
     const logOut = () => {
-        axios.post('/api/google-log-out')
-        .then(response => setAuthenticated(false))
+        axios.post('/api/google-log-out');
+        
+        setAuthenticated(false);
+        dispatch(authenticate(false));
+        
     }
 
     
@@ -157,7 +162,10 @@ const itemList = [
     useEffect(() => {
         fetch('/api/is-user-authenticated')
         .then(response => response.json())
-        .then((data) => setAuthenticated(data.status))
+        .then((data) => {
+            setAuthenticated(data.status);
+            dispatch(authenticate(data.status));
+        })
 
     }, [authenticated])
 
@@ -182,7 +190,7 @@ const itemList = [
         .then(response => setAllProduct(response.data))
     }, [])
 
-
+    
     useEffect(() => {
         axios.post('/api/create-user')
     } ,[])
@@ -201,7 +209,7 @@ const itemList = [
             <Grid container direction='column' className={classes.scroll}>
         <Grid item>
             <Grid item>
-                <Header companyName={state.name} itemList={itemList} picture={state.picture}  cartLength={cartItem} />
+                <Header companyName={state.name} itemList={itemList} picture={state.picture} />
             </Grid>
             <Grid item container>
                 <Grid item xs={12} sm={1} >
@@ -242,15 +250,11 @@ const itemList = [
                 <Route path='/product/:id/:slug' component={productPage} />
                 <Route path='/account-info' component={AccountInfo} />
                 <Route path='/active-product' component={RecipeReviewCard} />
-                <Route exact path='/cart' render={(props) => <Cart header={<Header companyName={state.name} itemList={itemList} picture={state.picture} cartLength={cartItem} />} {...props} />} />
+                <Route path='/error' component={errorPage} />
+                <Route exact path='/cart' render={(props) => <Cart header={<Header companyName={state.name} itemList={itemList} picture={state.picture} />} {...props} />} />
+                <Route exact path='/order' component={Orders} />
+                <Route exact path='/checkout' component={Checkout} />
             </Switch>
         </Router>        
-    )
+    );
 }
-
-
-
-
-/*        
-    }
-*/

@@ -68,6 +68,21 @@ export const final = (cart) => {
     }
 }
 
+export const authenticate = (status) => {
+    return {
+        type: 'AUTHENTICATED',
+        payload: status
+    }
+}
+
+
+export const orderInfo = (info) => {
+    return {
+        type: "ADD_ADDRESS",
+        payload: info
+    };
+};
+
 
 
 

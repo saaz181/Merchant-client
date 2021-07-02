@@ -13,11 +13,10 @@ import { IconButton, Snackbar } from '@material-ui/core';
 import axios from 'axios';
 import {editQuantity, openSnack, removeFromCartCount, totalOff, totalPrice, final} from '../actions';
 import TextField from '@material-ui/core/TextField';
-import {countryData} from './countries';
 
 const useStyles = makeStyles({
   table: {
-    minWidth: 650,
+    
   },
 });
 
@@ -46,7 +45,7 @@ export default function Cart(props) {
     message: '',
     type: ''
   })
-  console.log(window.location.pathname == '/cart')
+  
   const dispatch = useDispatch();
   const calcs = useSelector(state => state.calcs)
 

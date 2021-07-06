@@ -4,6 +4,7 @@ import { useField } from 'formik';
 
 const TextFieldWrapper = ({
         name,
+        text,
         ...otherProps
     }) => {
 
@@ -14,7 +15,7 @@ const TextFieldWrapper = ({
         ...field,
         ...otherProps,
         fullWidth: true,
-        variant: 'outlined'
+        variant: 'outlined',
     };
     
     if (meta && meta.touched && meta.error) {

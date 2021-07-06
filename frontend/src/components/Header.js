@@ -25,6 +25,8 @@ import AddIcon from '@material-ui/icons/Add';
 import { Link } from 'react-router-dom';
 import CustomizedBadges from './shopBadge';
 import {useSelector} from 'react-redux';
+import StoreIcon from '@material-ui/icons/Store';
+
 
 const drawerWidth = 240;
 const useStyles = makeStyles((theme) => ({
@@ -88,8 +90,9 @@ export default function Header(props) {
     const classes = useStyles();
     const theme = useTheme();
     const [open, setOpen] = React.useState(false);
-    const {companyName, itemList, picture, merchantId}  = props;
+    const {companyName, itemList, picture, merchantId, auth, logout}  = props;
     const isAuthenticated = useSelector(state => state.isAuthenticated);
+    const merchantIdx = useSelector(state => state.merchantId);
 
     const handleDrawerOpen = () => {
     setOpen(true);
@@ -139,11 +142,26 @@ export default function Header(props) {
               {isAuthenticated ?
                <div>
                {window.location.pathname != '/cart' ?
-                 <IconButton>
-                     <Link to={{pathname: '/cart'}} >
-                       <CustomizedBadges />
-                     </Link>    
-                 </IconButton>
+                 <span>
+                    <IconButton>
+                        <Link to={{pathname: '/cart'}} >
+                          <CustomizedBadges />
+                        </Link>    
+                    </IconButton>
+                    {merchantIdx ? 
+                            <Link to={{pathname: `/merchant/${merchantIdx}`}}>
+                                    <IconButton style={{color: 'white'}}>
+                                        <StoreIcon />
+                                    </IconButton>
+                            </Link>
+                            :
+                            <Link to={{pathname: `/merchant`}}
+                                style={{textDecoration : 'none', color: 'inherit'}}>
+                                    Create Merchant 
+                            </Link>
+
+                    }
+                  </span>
                  :
                  
                  <Link to={{pathname: '/order'}}>
@@ -154,7 +172,14 @@ export default function Header(props) {
              }
              </div>
              :
-             null 
+             <div>
+                <Button size='small' variant='contained' color='primary' onClick={() => auth()}>
+                    sign up
+                </Button>
+                <Button size='small' variant='contained' color='secondary' onClick={() => auth()}>
+                      Login
+                </Button>
+           </div> 
             }
               
           </div>

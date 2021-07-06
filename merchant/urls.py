@@ -9,7 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('', include('frontend.urls')),
-    path('IDpay/', include('IDpay.urls')),
+    path('idpay/', include('IDpay.urls')),
 
 ]
 

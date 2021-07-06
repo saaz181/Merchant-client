@@ -24,8 +24,6 @@ const useStyles = makeStyles((theme) => ({
     backgroundImage: 'linear-gradient(to bottom ,#ffffcc, #ffffb3, #ffff99)',
   }
 
-
-
 }));
 
 const makeCartObj = (data) => {

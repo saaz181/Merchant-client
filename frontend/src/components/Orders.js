@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { makeStyles } from '@material-ui/core/styles';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
@@ -14,10 +14,11 @@ import Checkbox from './FormUI/CheckBox';
 import Button from './FormUI/Button';
 import countries from '../data/countries.json';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { orderInfo } from '../actions';
-import { Link } from 'react-router-dom';
 import { useHistory } from "react-router-dom";
+import AddressCard from './AddressRecommendation/index';
+import {Button as Btn} from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
     formWrapper: {
@@ -91,13 +92,31 @@ const FORM_VALIDATION = Yup.object().shape({
         .required('The terms and conditions must be accepted'),
 });
 
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 
 function Orders() {
     const classes = useStyles();
     const history = useHistory();
     const dispatch = useDispatch();
-
+    const info = useSelector(state => state.info);
+    const disableForm = useSelector(state => state.disableForm);
+        
     const postData = async (data) => {
+        
         const formData = new FormData();
         formData.append('first_name', data.firstName);
         formData.append('last_name', data.lastName);
@@ -107,7 +126,9 @@ function Orders() {
         formData.append('state', data.state);
         formData.append('city', data.city);
         formData.append('address', data.fullAddress);
-    
+        
+        
+
         await axios.post('/api/order-info', formData)
             .then(res => dispatch(orderInfo(res.data)));
     }
@@ -115,7 +136,6 @@ function Orders() {
     return (
         <Grid container style={{ height: '100vh', overflowY: 'scroll' }}>
             <Grid item xs={12} />
-
             <Grid item xs={12}>
                 <Container maxWidth='md'>
                     <div className={classes.formWrapper}>
@@ -126,17 +146,38 @@ function Orders() {
                             }}
                             validationSchema={FORM_VALIDATION}
                             onSubmit={(values, {setSubmitting}) => {
-                                setSubmitting(true);
                                 
                                 postData(values);
                                 history.push('/checkout')
                                 
-                                setSubmitting(false);
                             }}
                         >
                             <Form>
                                 <Grid container spacing={2}>
+                                
+                                    <Grid item xs={12}>
+                                            <Typography>
+                                                Previous Addresses
+                                            </Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                            <AddressCard />
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                    {disableForm ? 
+                                        <Btn onClick={() => {
+                                            postData(info);
+                                            history.push('/checkout');
+                                            }}
+                                            variant='contained'
+                                            color='secondary'
+                                            fullWidth
+                                            >
+                                            submit
 
+                                        </Btn>
+                                        : null}
+                                    </Grid>
                                     <Grid item xs={12}>
                                         <Typography>
                                             Details
@@ -148,6 +189,9 @@ function Orders() {
                                             name="firstName"
                                             label="First Name"
                                             placeholder="First Name"
+                                            disabled={disableForm}
+                                            
+                                            
                                         />
                                     </Grid>
 
@@ -156,6 +200,7 @@ function Orders() {
                                             name="lastName"
                                             label="Last Name"
                                             placeholder="Last Name"
+                                            disabled={disableForm}
                                         />
                                     </Grid>
 
@@ -172,6 +217,8 @@ function Orders() {
                                             name="phone"
                                             label="Phone"
                                             placeholder="Phone"
+                                            disabled={disableForm}
+                                            
                                         />
                                     </Grid>
                                     <Grid item xs={3} />
@@ -186,6 +233,8 @@ function Orders() {
                                             name="fullAddress"
                                             label="Address"
                                             placeholder="Address"
+                                            disabled={disableForm}
+                                            
                                         />
                                     </Grid>
                                     <Grid item xs={6}>
@@ -193,6 +242,8 @@ function Orders() {
                                             name="zipCode"
                                             label="Zip Code"
                                             placeholder="Zip-Code"
+                                            disabled={disableForm}
+                                            
                                         />
                                     </Grid>
                                     <Grid item xs={6}>
@@ -200,6 +251,8 @@ function Orders() {
                                             name="city"
                                             label="City"
                                             placeholder="City"
+                                            disabled={disableForm}
+                                           
                                         />
                                     </Grid>
                                     <Grid item xs={6}>
@@ -207,6 +260,8 @@ function Orders() {
                                             name="state"
                                             label="State"
                                             placeholder="State"
+                                            disabled={disableForm}
+                                            
                                         />
                                     </Grid>
                                     <Grid item xs={6}>
@@ -214,6 +269,7 @@ function Orders() {
                                             name="country"
                                             label="Country"
                                             options={countries}
+                                            disabled={disableForm}
                                         />
                                     </Grid>
 
@@ -251,10 +307,12 @@ function Orders() {
                                             name="termsOfService"
                                             legend="Terms of Service"
                                             label="I agree"
+                                            disabled={disableForm}
+                                            
                                         />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <Button>
+                                        <Button disabled={disableForm}>
                                             Submit
                                             </Button>
                                     </Grid>

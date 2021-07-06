@@ -30,7 +30,7 @@ import axios from 'axios';
 import StoreIcon from '@material-ui/icons/Store';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import snackBar from './snackBar';
-import { useDispatch} from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, openSnack } from '../actions';
 
 
@@ -83,7 +83,7 @@ const CustomCard = (props) => {
     const classes = useStyles();
     const theme = useTheme();
     const dispatch = useDispatch();
-
+    const isAuthenticated = useSelector(state => state.isAuthenticated);    
     const {
         avatarSrc, 
         product_name, 
@@ -242,7 +242,8 @@ const CustomCard = (props) => {
                                 offPrice: off,
                                 description: product_description,
                                 quantity: quantity,
-                                uploadedImage: product_image
+                                uploadedImage: product_image,
+                                
                             }
              }} >
                 <CardMedia
@@ -265,8 +266,10 @@ const CustomCard = (props) => {
                     <BottomNavigationAction label="views" icon={0} />
                     <BottomNavigationAction label="quantity" icon={quantity} />
                     <BottomNavigationAction onClick={() => {
-                        cart(id);
-                        renderSnackBar();
+                        if (isAuthenticated){
+                            cart(id);
+                            renderSnackBar();
+                        }
                         }} label='add to cart' icon={<ShoppingCartIcon />} />
                     </BottomNavigation>
         </CardActions>

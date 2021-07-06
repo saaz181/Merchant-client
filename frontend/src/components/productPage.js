@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button, Grid, Typography } from '@material-ui/core';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 import Header from './Header';
@@ -9,6 +9,9 @@ import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import HomeIcon from '@material-ui/icons/Home';
 import VisibilityIcon from '@material-ui/icons/Visibility';
+import addToCart from './Homepage';
+import StarRatingComponent from 'react-star-rating-component';
+import StarRateIcon from '@material-ui/icons/StarRate';
 
 const useStyles = makeStyles((theme) => ({
     scroll: {
@@ -45,11 +48,10 @@ const convert = (big_number) => {
 function productPage(props) {
     const classes = useStyles();
     const theme = useTheme();
-    const {history} = props;
-
+    const { history } = props;
+    const [stars, setStars] = useState(0);
     const { location } = props;
-    console.log(location);
-
+    
     const itemList = [
         {
             text: 'Home',
@@ -89,6 +91,7 @@ function productPage(props) {
         
     ];
 
+
     return (
         <Grid container direction='column' className={classes.scroll}>
         <Grid item>
@@ -116,6 +119,13 @@ function productPage(props) {
                             <Typography variant="body1">
                                 Quantity: {convert(location.state.quantity)}
                             </Typography>
+                            <StarRatingComponent 
+                                name="Product Rating" 
+                                starCount={5}
+                                renderStarIcon={() => <StarRateIcon fontSize="large" />}
+                                value={stars}
+                                onStarClick={(nextValue, prevValue, name) => setStars(nextValue)}
+                                />
                             
                     </Grid>
 
@@ -127,7 +137,11 @@ function productPage(props) {
                             {location.state.description}
                         </Typography>
                             
-                            <Button color='primary' variant='contained' className={classes.btn}>
+                            <Button color='primary' 
+                                    variant='contained' 
+                                    className={classes.btn}
+                                    
+                                    >
                         Add to Cart
                             </Button>
                     </Grid>

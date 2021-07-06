@@ -44,9 +44,10 @@ class Merchant(models.Model):
     shaba_code = models.CharField(max_length=50, unique=True)
     unique_email = models.EmailField(blank=True, null=True, default='example@example.com')
     earned = models.FloatField(default=0, blank=True, null=True)
+    orders = models.ManyToManyField('UserCart', blank=True)
 
     def __str__(self) -> str:
-        return self.merchant_id
+        return self.first_name.capitalize() + ' ' + self.last_name.capitalize()
 
     class Meta:
         verbose_name_plural = 'Merchants'
@@ -56,7 +57,7 @@ class Merchant(models.Model):
 class Categories(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
-    sub_category = models.ManyToManyField('SubCategory', blank=True, null=True)
+    sub_category = models.ManyToManyField('SubCategory', blank=True)
     
     def __str__(self) -> str:
         return self.title
@@ -67,7 +68,7 @@ class Categories(models.Model):
 
 class SubCategory(models.Model):
     title = models.CharField(max_length=100)
-    sub_sub_category = models.ManyToManyField('SubSubCategory', blank=True, null=True)
+    sub_sub_category = models.ManyToManyField('SubSubCategory', blank=True)
 
 
     def __str__(self) -> str:
@@ -95,9 +96,9 @@ class Products(models.Model):
     off = models.FloatField(blank=True, null=True, default=0)
     visited_time = models.IntegerField(blank=True, null=True)
     purchased_time = models.IntegerField(blank=True, null=True)
-    category = models.ManyToManyField(Categories, blank=True, null=True)
-    sub_category = models.ManyToManyField(SubCategory, blank=True, null=True)
-    sub_sub_category = models.ManyToManyField(SubSubCategory, blank=True, null=True)
+    category = models.ManyToManyField(Categories, blank=True)
+    sub_category = models.ManyToManyField(SubCategory, blank=True)
+    sub_sub_category = models.ManyToManyField(SubSubCategory, blank=True)
     slug = models.SlugField(max_length=200, blank=True, null=True)
     merchant_logo = models.ImageField(blank=True, null=True)
 
@@ -130,22 +131,24 @@ class UserCart(models.Model):
     username = models.CharField(max_length=50, blank=True, null=True)
     product = models.ForeignKey(Products, blank=True, null=True, related_name='cart_product',on_delete=models.SET_NULL)
     quantity = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    address = models.ForeignKey('UserAddress', blank=True, null=True, on_delete=models.SET_NULL)
     ordered = models.BooleanField(default=False)
 
     def __str__(self) -> str:
-        return f'username: {self.username} | Product: {self.product} - Quantity: {self.quantity}' 
+        return f'Product: {self.product} - Quantity: {self.quantity}' 
 
     def total_product_price(self):
         return self.quantity * self.product.price
 
     def total_product_off_price(self):
-        return self.quantity * self.product.off
-    
+        if self.product.off:
+            return self.quantity * self.product.off
+
     def profit_from_this_buy(self):
         return self.total_product_price() - self.total_product_off_price()
 
     def payment_price(self):
-        if self.product.off != 0:
+        if self.product.off:
             return self.total_product_off_price()
         return self.total_product_price()
 
@@ -154,12 +157,10 @@ class UserCart(models.Model):
 
 class User(models.Model):
     username = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    cart = models.ManyToManyField(UserCart, blank=True, null=True)    
+    cart = models.ManyToManyField(UserCart, blank=True)    
     is_merchant = models.BooleanField(default=False)
     shipping_address = models.ForeignKey('UserAddress', related_name='shipping_address', blank=True, null=True, on_delete=models.SET_NULL)
-    is_delivered = models,BooleanField(default=False)
-    is_received = models.BooleanField(default=False)
-    date_received = models.DateTimeField(blank=True, null=True)
+    orders = models.ManyToManyField('Orders', blank=True)
 
     def __str__(self) -> str:
         return self.username
@@ -170,6 +171,14 @@ class User(models.Model):
             total += product.payment_price()
         
         return total
+    
+    def get_description_for_payment(self):
+        description = ''
+        for product in self.cart.all():
+            desc = product.product.product_name + '\n'
+            description += desc
+        
+        return description
 
 class UserAddress(models.Model):
     username = models.CharField(max_length=50, blank=True, null=True)
@@ -181,7 +190,6 @@ class UserAddress(models.Model):
     state = models.CharField(max_length=50, blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
-    credit_cart = models.CharField(max_length=50, blank=True, null=True)
     date_ordered = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     default = models.BooleanField(default=False)
 
@@ -190,6 +198,22 @@ class UserAddress(models.Model):
 
     class Meta:
         get_latest_by = ['address']
+
+class Orders(models.Model):
+    username = models.CharField(max_length=50, blank=True, null=True)
+    order = models.ManyToManyField(UserCart, blank=True)
+    address = models.ForeignKey(UserAddress, blank=True, null=True, on_delete=models.CASCADE)
+    is_delivered = models,BooleanField(default=False)
+    is_received = models.BooleanField(default=False)
+    date_received = models.DateTimeField(blank=True, null=True)
+    date_delivered = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self) -> str:
+        return self.username
+    
+   
+    class Meta:
+        verbose_name_plural = 'Orders'
 
 class GoogleToken(models.Model):
     user = models.CharField(max_length=50, unique=True)

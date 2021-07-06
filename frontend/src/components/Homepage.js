@@ -15,8 +15,6 @@ import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import StoreIcon from '@material-ui/icons/Store';
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import VpnKeyIcon from '@material-ui/icons/VpnKey';
 import axios from 'axios';
 import makeProduct from './makeProduct';
 import AccountInfo from './AccountInfo';
@@ -29,10 +27,12 @@ import Content from './content';
 import Cart from './Cart';
 import CustomizedSnackbars from './snackBar';
 import {useDispatch, useSelector} from 'react-redux';
-import { addToCartCount, addToCartItems, authenticate } from '../actions';
+import { addToCartCount, addToCartItems, authenticate, setMerchantId } from '../actions';
 import Orders from './Orders';
 import errorPage from './404Page';
 import Checkout from './checkout/index';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+
 
 const useStyles = makeStyles((theme) => ({
     scroll: {
@@ -59,15 +59,22 @@ export default function Homepage (props) {
     const [allProduct, setAllProduct] = useState([]);
     const isAuthenticated = useSelector(state => state.isAuthenticated)
 
-const itemList = [
-            {
-                text: <Link to={{pathname: `merchant/${state.merchant_id}`}}
-                            style={{textDecoration : 'none', color: 'inherit'}}>
-                                Merchant Page 
-                        </Link>,
-                icon: <StoreIcon />,
-                onClick: null
-            },
+    useEffect(() => {
+        axios.get('/api/user-has-merchant')
+        .then(response => {
+                setState({
+                ...state,
+                merchant_id: response.data.merchant_id
+            })
+            dispatch(setMerchantId(response.data.merchant_id));
+            if (!response.data.merchant_id) {
+                setMerchantCreation(true)
+                setCreateMerchant(false);
+            };
+        });
+    }, [state.merchant_id])
+
+    const itemList = [
             {
                 text: 'Purchased Product',
                 icon: <ShoppingCartIcon />,
@@ -102,16 +109,11 @@ const itemList = [
                 text: 'Log-out',
                 icon: <ExitToAppIcon />,
                 onClick: () => {if (authenticated) {logOut(); window.location.reload()}}
-            },
-            {
-                text: 'Log-in',
-                icon: <VpnKeyIcon />,
-                onClick: () => authentication()
-                
             }
+            
         ];
         
-
+    
     const authentication = () => {
         fetch('/api/google-get-auth-url')
         .then((response) => response.json())
@@ -140,24 +142,15 @@ const itemList = [
                 dispatch(addToCartItems(
                     [res.data]
                 ));
+            } else {
+                console.log(res);
             }
         })
         
     }
 
-    useEffect(() => {
-        axios.get('/api/user-has-merchant')
-        .then(response => {
-                setState({
-                ...state,
-                merchant_id: response.data.merchant_id
-            })
-            if (!response.data.merchant_id) {
-                setMerchantCreation(true)
-                setCreateMerchant(false);
-            };
-        });
-    }, [state.merchant_id])
+    
+
 
     useEffect(() => {
         fetch('/api/is-user-authenticated')
@@ -209,7 +202,7 @@ const itemList = [
             <Grid container direction='column' className={classes.scroll}>
         <Grid item>
             <Grid item>
-                <Header companyName={state.name} itemList={itemList} picture={state.picture} />
+                <Header companyName={state.name} itemList={itemList} picture={state.picture} auth={authentication} />
             </Grid>
             <Grid item container>
                 <Grid item xs={12} sm={1} >

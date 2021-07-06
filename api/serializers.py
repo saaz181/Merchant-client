@@ -110,10 +110,6 @@ class MainMerchantPageSerializer(serializers.ModelSerializer):
         )
 
 
-class CreateCartSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserCart
-        fields = '__all__'
     
     
 class GetCartSerializer(serializers.ModelSerializer):
@@ -143,7 +139,28 @@ class CreateUserAddressSerializer(serializers.ModelSerializer):
             'state',
             'city',
             'address',
-            'credit_cart',
             'default'
         )
 
+class CreateCartSerializer(serializers.ModelSerializer):
+    address = CreateUserAddressSerializer(read_only=True)
+    
+    class Meta:
+        model = UserCart
+        fields = '__all__'
+
+class OrderSerializer(serializers.ModelSerializer):
+    order = CreateCartSerializer
+    address = CreateUserAddressSerializer
+
+    class Meta:
+        model = Orders
+        fields = ('id', 'address')
+
+class ShowOrderSerializer(serializers.ModelSerializer):
+    order = CreateCartSerializer(many=True, read_only=True)
+    address = CreateUserAddressSerializer(read_only=True)
+
+    class Meta:
+        model = Orders
+        fields = '__all__'

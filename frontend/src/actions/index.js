@@ -84,6 +84,25 @@ export const orderInfo = (info) => {
 };
 
 
+export const setMerchantId = (merchantId) => {
+    return {
+        type: 'FOUND',
+        payload: merchantId
+    }
+}
+
+export const disableForm = () => {
+    return {
+        type: 'DISABLE'
+    };
+};
+
+export const enableForm = () => {
+    return {
+        type: 'ENABLE'
+    };
+};
+
 
 
 

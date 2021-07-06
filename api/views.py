@@ -445,7 +445,7 @@ class CreateCart(APIView):
                 if cart.exists():
                     return Response(GetCartSerializer(cart[0]).data, status=status.HTTP_200_OK)
             
-            cart = UserCart.objects.filter(username=user)
+            cart = UserCart.objects.filter(username=user, ordered=False)
             if cart.exists():
                 return Response(GetCartSerializer(cart, many=True).data, status=status.HTTP_200_OK)
 
@@ -460,31 +460,36 @@ class CreateCart(APIView):
             serializer = self.serializer_class(data=request.data)
 
             if serializer.is_valid():
+                merchant_id = request.session.get('merchant_id') 
                 user = request.session.get('email')
                 product = serializer.validated_data.get('product')
                 quantity = serializer.validated_data.get('quantity')
                 
-                if quantity <= product.quantity:
-                    user_cart_id = UserCart.objects.filter(username=user, product=product)
-                    if not user_cart_id.exists():
-                        cart = UserCart(username=user, product=product, quantity=quantity)
-                        cart.save()
+                
+                if merchant_id != product.merchant_id:  
+                    if quantity <= product.quantity:
+                        user_cart_id = UserCart.objects.filter(username=user, product=product, ordered=False)
+                        if not user_cart_id.exists():
+                            cart = UserCart(username=user, product=product, quantity=quantity)
+                            cart.save()
 
-                        user_cart = User.objects.filter(username=user)
-                        user_cart[0].cart.add(cart)
-                        return Response(GetCartSerializer(cart).data, status=status.HTTP_200_OK)
+                            user_cart = User.objects.filter(username=user)
+                            user_cart[0].cart.add(cart)
+                            return Response(GetCartSerializer(cart).data, status=status.HTTP_200_OK)
+                        
+                        else:
+                            user_cart_id[0].quantity += 1
+                            user_cart_id[0].save()
+
+                            user_cart = User.objects.filter(username=user)
+                            user_cart[0].cart.add(user_cart_id[0])
+
+                            return Response(GetCartSerializer(user_cart_id[0]).data, status=status.HTTP_204_NO_CONTENT)
                     
                     else:
-                        user_cart_id[0].quantity += 1
-                        user_cart_id[0].save()
-
-                        user_cart = User.objects.filter(username=user)
-                        user_cart[0].cart.add(user_cart_id[0])
-
-                        return Response(GetCartSerializer(user_cart_id[0]).data, status=status.HTTP_204_NO_CONTENT)
-                
+                        return Response({'out of range': 'The quantity that you want is out of range'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    return Response({'out of range': 'The quantity that you want is out of range'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'Product From own': "You cannot order your product"}, status=status.HTTP_400_BAD_REQUEST) 
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -564,7 +569,6 @@ class orderInfo(APIView):
                 state = serializer.validated_data.get('state')
                 city = serializer.validated_data.get('city')
                 address = serializer.validated_data.get('address')
-                credit_cart = serializer.validated_data.get('credit_cart')
                 default = serializer.validated_data.get('default')
                 
                 user_address = UserAddress(
@@ -577,25 +581,71 @@ class orderInfo(APIView):
                     state=state,
                     city=city,
                     address=address,
-                    credit_cart=credit_cart,
                     default=default
                     )
 
                 
                 check_user = UserAddress.objects.filter(username=user, address=address, first_name=first_name, last_name=last_name)
                 if check_user.exists():
-                    return Response({'Existence': 'address Already Exists'}, status=status.HTTP_204_NO_CONTENT)
+                    user = User.objects.filter(username=user)
+                    if user.exists():
+                        user.update(shipping_address=check_user[0])
+        
+                        return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
                     
                 else:
                     user_address.save()
                     user = User.objects.filter(username=user)
                     if user.exists():
                         user.update(shipping_address=user_address)
+                            
                         return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
-        
+
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 ##################
+
+
+### CREATE ORDER
+
+class OrderItem(APIView):
+    serializer_class = OrderSerializer
+
+    def get(self, request, format=None):
+        orders = Orders.objects.all()
+        return Response(ShowOrderSerializer(orders, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+        if is_authenticated_google(self.request.session.session_key):
+            serializer = self.serializer_class(data=request.data)
+            
+            if serializer.is_valid():
+                user = request.session.get('email')
+                address = serializer.validated_data.get('address')
+                user_cart = UserCart.objects.filter(username=user, ordered=False)
+                
+                order_instance = Orders.objects.create(username=user, address=address)
+                order_instance.order.set(user_cart)
+
+                user_order = User.objects.filter(username=user)[0]
+                user_order.orders.add(order_instance)
+
+                for product in user_cart:
+                    merchant_id = product.product.merchant_id
+                    product.address = address
+                    product.save()     
+                    merchant = Merchant.objects.filter(merchant_id=merchant_id)[0]
+                    merchant.orders.add(product)
+
+                return Response(ShowOrderSerializer(order_instance).data, status=status.HTTP_201_CREATED)
+            
+            else:
+                return Response(serializer.errors, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({'Unauthorized': 'You are not authorized to create order'}, status=status.HTTP_401_UNAUTHORIZED)
+
+################
+
 
 
 """ AUTHENTICATION SECTION """

@@ -4,7 +4,6 @@ import { useField } from 'formik';
 
 const TextFieldWrapper = ({
         name,
-        text,
         ...otherProps
     }) => {
 

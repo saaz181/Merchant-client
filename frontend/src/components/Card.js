@@ -215,7 +215,13 @@ const CustomCard = (props) => {
                     </Dialog>
                     </div>
                     :
-                    <MenuItem>
+                    <MenuItem onClick={() => {
+                        if (isAuthenticated){
+                            cart(id);
+                            renderSnackBar();
+                        }
+                        }}
+                        >
                         <StoreIcon color='primary' /> Add to cart
                     </MenuItem>
                 }

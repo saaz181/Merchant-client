@@ -1,5 +1,6 @@
 from .credentials import *
 from requests import post
+from api.models import User
 
 
 def verify_payment(idx, order_id):
@@ -14,9 +15,14 @@ def verify_payment(idx, order_id):
         'id': idx,
         'order_id': order_id
     }
-    
+
     response = post(url, headers=headers, json=params).json()
     if 'error_code' in response:
         return False
     
     return True
+
+
+
+
+    

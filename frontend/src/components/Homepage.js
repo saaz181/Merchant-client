@@ -149,9 +149,6 @@ export default function Homepage (props) {
         
     }
 
-    
-
-
     useEffect(() => {
         fetch('/api/is-user-authenticated')
         .then(response => response.json())
@@ -197,7 +194,7 @@ export default function Homepage (props) {
         })
     }, [])
 
-    function renderMerchantPage() {
+    const renderMerchantPage = () => {
         return(
             <Grid container direction='column' className={classes.scroll}>
         <Grid item>
@@ -248,6 +245,6 @@ export default function Homepage (props) {
                 <Route exact path='/order' component={Orders} />
                 <Route exact path='/checkout' component={Checkout} />
             </Switch>
-        </Router>        
+        </Router>
     );
 }

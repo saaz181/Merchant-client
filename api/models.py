@@ -94,13 +94,14 @@ class Products(models.Model):
     price = models.FloatField(default=0, validators=[MinValueValidator(0)])
     quantity = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     off = models.FloatField(blank=True, null=True, default=0)
-    visited_time = models.IntegerField(blank=True, null=True)
     purchased_time = models.IntegerField(blank=True, null=True)
     category = models.ManyToManyField(Categories, blank=True)
     sub_category = models.ManyToManyField(SubCategory, blank=True)
     sub_sub_category = models.ManyToManyField(SubSubCategory, blank=True)
     slug = models.SlugField(max_length=200, blank=True, null=True)
     merchant_logo = models.ImageField(blank=True, null=True)
+    visited_time = models.IntegerField(blank=True, null=True)
+    rate = models.IntegerField(default=0)
 
     def __str__(self) -> str:
         return self.product_name

@@ -9,9 +9,12 @@ import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import ShoppingCartIcon from '@material-ui/icons/ShoppingCart';
 import HomeIcon from '@material-ui/icons/Home';
 import VisibilityIcon from '@material-ui/icons/Visibility';
-import addToCart from './Homepage';
 import StarRatingComponent from 'react-star-rating-component';
 import StarRateIcon from '@material-ui/icons/StarRate';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCartCount, addToCartItems } from '../actions';
+import axios from 'axios';
+import ProductCard from '../ProductDetailCard'
 
 const useStyles = makeStyles((theme) => ({
     scroll: {
@@ -30,6 +33,12 @@ const useStyles = makeStyles((theme) => ({
     btn: {
         marginTop: theme.spacing(3),
         backgroundImage: 'linear-gradient(to right, rgba(255,0,0,0), rgba(255,0,0,1))'
+    },
+    img: {
+        boxShadow: '1px 1px 1rem grey',
+        borderRadius: '10px',
+        maxWidth: '300px',
+        maxHeight: '168px'
     }
     
   }));
@@ -51,7 +60,25 @@ function productPage(props) {
     const { history } = props;
     const [stars, setStars] = useState(0);
     const { location } = props;
-    
+    const dispatch = useDispatch();
+    const isAuthenticated = useSelector(state => state.isAuthenticated);
+
+    const addToCart = (idx) => {
+        axios.post('/api/create-cart', {
+            product: idx,
+            quantity: 1
+        })
+        .then(res => {
+            if (res.status == 200){
+                dispatch(addToCartCount(1));
+                dispatch(addToCartItems(
+                    [res.data]
+                ));
+            }
+        })
+        
+    }
+
     const itemList = [
         {
             text: 'Home',
@@ -100,33 +127,32 @@ function productPage(props) {
             </Grid>
             <Grid item container>
                 <Grid item xs={12} sm={1} align='right' />
-                <Grid item container xs={12} sm={10} direction='row'>
+                <Grid item container xs={12} sm={10} spacing={1}>
                     
-                    <Grid item xs={12} sm={4} align='center' className={classes.picture}>
-                        <img src={location.state.uploadedImage} alt={location.state.productName} />
-                    </Grid>
-
-                    <Grid item xs={12} sm={5} align='center' style={{marginRight: theme.spacing(1)}}>
-                            {location.state.offPrice && location.state.offPrice != 0 ? 
-                            <Typography variant="body1" color='secondary'>
-                                Price: <del>{convert(location.state.price)}</del> {convert(location.state.offPrice)} ريال
-                            </Typography>
-                                :
-                            <Typography variant="body1">
-                                Price: {convert(location.state.price)}
-                            </Typography>
-                        }
-                            <Typography variant="body1">
-                                Quantity: {convert(location.state.quantity)}
-                            </Typography>
-                            <StarRatingComponent 
+                    <Grid item xs={12} sm={12} align='center' className={classes.picture}>
+                        <div> 
+                            <img 
+                                src={location.state.uploadedImage} 
+                                alt={location.state.productName}
+                                className={classes.img}
+                                 />
+                        </div>
+                        <StarRatingComponent
                                 name="Product Rating" 
                                 starCount={5}
                                 renderStarIcon={() => <StarRateIcon fontSize="large" />}
                                 value={stars}
                                 onStarClick={(nextValue, prevValue, name) => setStars(nextValue)}
+                                editing={isAuthenticated}        
                                 />
-                            
+                    </Grid>
+
+                    <Grid item xs={12} align='center' style={{marginBottom: theme.spacing(1)}}>
+                            <ProductCard price={convert(location.state.price)}
+                                         offPrice={convert(location.state.offPrice)}
+                                         quantity={location.state.quantity}
+                                         star={4}
+                                         />                 
                     </Grid>
 
                     <Grid item xs={12} sm={12} md={12} align='left' className={classes.text}>
@@ -140,7 +166,7 @@ function productPage(props) {
                             <Button color='primary' 
                                     variant='contained' 
                                     className={classes.btn}
-                                    
+                                    onClick={() => addToCart(location.state.id)}
                                     >
                         Add to Cart
                             </Button>

@@ -464,7 +464,7 @@ class CreateCart(APIView):
                 user = request.session.get('email')
                 product = serializer.validated_data.get('product')
                 quantity = serializer.validated_data.get('quantity')
-                
+                print(product)
                 
                 if merchant_id != product.merchant_id:  
                     if quantity <= product.quantity:
@@ -541,11 +541,18 @@ class CreateCart(APIView):
 
 class orderInfo(APIView):
     serializer_class = CreateUserAddressSerializer
+    lookup_url_kwarg = 'current_address'
 
     def get(self, request, format=None):
         if is_authenticated_google(self.request.session.session_key):
             user = request.session.get('email')
             info = UserAddress.objects.filter(username=user)
+            current = request.GET.get(self.lookup_url_kwarg)
+
+            if current == '1':
+                info = User.objects.filter(username=user)
+                if info.exists():
+                    return Response(self.serializer_class(info[0].shipping_address).data, status=status.HTTP_200_OK)
 
             if info.exists():
                 return Response(self.serializer_class(info, many=True).data, status=status.HTTP_200_OK)
@@ -570,7 +577,7 @@ class orderInfo(APIView):
                 city = serializer.validated_data.get('city')
                 address = serializer.validated_data.get('address')
                 default = serializer.validated_data.get('default')
-                
+
                 user_address = UserAddress(
                     username=user, 
                     first_name=first_name,
@@ -589,9 +596,10 @@ class orderInfo(APIView):
                 if check_user.exists():
                     user = User.objects.filter(username=user)
                     if user.exists():
-                        user.update(shipping_address=check_user[0])
-        
-                        return Response(CreateUserAddressSerializer(user_address).data, status=status.HTTP_201_CREATED)
+                        user[0].shipping_address = check_user[0]
+                        user[0].save()
+                        
+                        return Response(CreateUserAddressSerializer(check_user[0]).data, status=status.HTTP_201_CREATED)
                     
                 else:
                     user_address.save()
@@ -607,7 +615,7 @@ class orderInfo(APIView):
 
 
 ### CREATE ORDER
-
+### this is for testing on RESt API the main implementation will be on the IDpay app
 class OrderItem(APIView):
     serializer_class = OrderSerializer
 
@@ -622,7 +630,7 @@ class OrderItem(APIView):
             if serializer.is_valid():
                 user = request.session.get('email')
                 address = serializer.validated_data.get('address')
-                user_cart = UserCart.objects.filter(username=user, ordered=False)
+                user_cart = UserCart.objects.filter(username=user, ordered=True)
                 
                 order_instance = Orders.objects.create(username=user, address=address)
                 order_instance.order.set(user_cart)
@@ -632,6 +640,10 @@ class OrderItem(APIView):
 
                 for product in user_cart:
                     merchant_id = product.product.merchant_id
+                    ordered_quantity = product.quantity
+                    product_in_merchant = Products.objects.filter(id=product.product.id)[0]
+                    product_in_merchant.quantity -= ordered_quantity
+                    product_in_merchant.save()
                     product.address = address
                     product.save()     
                     merchant = Merchant.objects.filter(merchant_id=merchant_id)[0]

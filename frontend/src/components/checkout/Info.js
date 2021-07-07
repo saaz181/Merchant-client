@@ -30,10 +30,12 @@ export default function OutlinedCard() {
     const dispatch = useDispatch();
 
     React.useEffect(() => {
-        axios.get('/api/order-info')
-            .then(res => dispatch(orderInfo(res.data[res.data.length - 1])))
+        axios.get('/api/order-info?current_address=1')
+            .then(res => {
+                dispatch(orderInfo(res.data))
+                // console.log(res.data);
+            })
     }, [])
-
 
     return (
         <Card className={classes.root} variant="outlined">

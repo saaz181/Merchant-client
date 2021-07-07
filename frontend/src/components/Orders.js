@@ -114,7 +114,11 @@ function Orders() {
     const dispatch = useDispatch();
     const info = useSelector(state => state.info);
     const disableForm = useSelector(state => state.disableForm);
-        
+    
+    React.useEffect(() => {
+        dispatch(orderInfo({}));
+    }, [])
+
     const postData = async (data) => {
         
         const formData = new FormData();
@@ -128,9 +132,17 @@ function Orders() {
         formData.append('address', data.fullAddress);
         
         
-
         await axios.post('/api/order-info', formData)
-            .then(res => dispatch(orderInfo(res.data)));
+            .then(res => {
+                dispatch(orderInfo(res.data));
+            });
+        
+        history.push('/checkout');
+    }
+
+    const postDataInSelect = async () => {
+        await axios.post('/api/order-info', info)
+        history.push('/checkout');
     }
 
     return (
@@ -146,9 +158,7 @@ function Orders() {
                             }}
                             validationSchema={FORM_VALIDATION}
                             onSubmit={(values, {setSubmitting}) => {
-                                
                                 postData(values);
-                                history.push('/checkout')
                                 
                             }}
                         >
@@ -166,8 +176,8 @@ function Orders() {
                                     <Grid item xs={6}>
                                     {disableForm ? 
                                         <Btn onClick={() => {
-                                            postData(info);
-                                            history.push('/checkout');
+                                            postDataInSelect();
+                                            
                                             }}
                                             variant='contained'
                                             color='secondary'

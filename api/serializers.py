@@ -32,9 +32,6 @@ class CreateMerchantSerializer(serializers.ModelSerializer):
             'shaba_code'
         )
 
-
-
-
 class UpdateMerchantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Merchant
@@ -82,7 +79,8 @@ class CreateProductSerializer(serializers.ModelSerializer):
             'category',
             'purchased_time',
             'slug',
-            'merchant_logo'
+            'merchant_logo',
+            'rate'
         )
 
 
@@ -149,6 +147,14 @@ class CreateCartSerializer(serializers.ModelSerializer):
         model = UserCart
         fields = '__all__'
 
+class ShowCartSerializer(serializers.ModelSerializer):
+    address = CreateUserAddressSerializer(read_only=True)
+    product = CreateProductSerializer(read_only=True)
+
+    class Meta:
+        model = UserCart
+        fields = '__all__'
+
 class OrderSerializer(serializers.ModelSerializer):
     order = CreateCartSerializer
     address = CreateUserAddressSerializer
@@ -158,7 +164,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ('id', 'address')
 
 class ShowOrderSerializer(serializers.ModelSerializer):
-    order = CreateCartSerializer(many=True, read_only=True)
+    order = ShowCartSerializer(many=True, read_only=True)
     address = CreateUserAddressSerializer(read_only=True)
 
     class Meta:

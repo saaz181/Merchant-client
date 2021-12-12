@@ -6,6 +6,9 @@ can make their own store
 which ANYONE can create their 
 own Store and sell their products there.
 
+The payment in this website is provided by 'IDpay' the Iranian website that provides payment
+services (https://idpay.ir/)
+
 The Authentication on this website is by Google-OAuth2 authentication
 
 **_Technologies_**
